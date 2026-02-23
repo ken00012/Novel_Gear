@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { Book, Users, BarChart2, MessageSquare } from "lucide-react";
+import { Book, Users, BarChart2, MessageSquare, Library } from "lucide-react";
 
 export default function DashboardLayout() {
     const location = useLocation();
@@ -7,6 +7,7 @@ export default function DashboardLayout() {
     const navItems = [
         { name: "プロット", path: "/plot", icon: Book },
         { name: "登場人物", path: "/characters", icon: Users },
+        { name: "設定資料", path: "/library", icon: Library },
         { name: "ステータス", path: "/status", icon: BarChart2 },
         { name: "掲示板生成", path: "/board", icon: MessageSquare },
     ];
@@ -28,8 +29,8 @@ export default function DashboardLayout() {
                                     <Link
                                         to={item.path}
                                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive
-                                                ? "bg-indigo-50 text-indigo-700"
-                                                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                                            ? "bg-indigo-50 text-indigo-700"
+                                            : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                                             }`}
                                     >
                                         <Icon size={18} className={isActive ? "text-indigo-600" : "text-gray-400"} />

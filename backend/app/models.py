@@ -1,4 +1,4 @@
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text, JSON
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Text, JSON, Table
 from sqlalchemy.orm import relationship
 from .database import Base
 
@@ -17,8 +17,17 @@ class Character(Base):
     # JSON to store visibility flags: e.g. {"age": True, "gender": False}
     visibility_settings = Column(JSON, default={})
 
+    is_status_enabled = Column(Boolean, default=True)
+    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=True)
+    level = Column(Integer, default=1)
+    talent_bonuses = Column(JSON, default={})
+
     attributes = relationship("CustomAttribute", back_populates="character", cascade="all, delete-orphan")
     states = relationship("CharacterState", back_populates="character", cascade="all, delete-orphan")
+    
+    job = relationship("Job", back_populates="characters")
+    skills = relationship("Skill", secondary="character_skills", backref="characters")
+    equipments = relationship("Equipment", secondary="character_equipments", backref="characters")
 
 
 class CustomAttribute(Base):
@@ -70,3 +79,49 @@ class CharacterState(Base):
 
     character = relationship("Character", back_populates="states")
     event = relationship("Event", back_populates="states")
+
+# Many-to-Many Association Tables
+character_skills = Table(
+    "character_skills",
+    Base.metadata,
+    Column("character_id", Integer, ForeignKey("characters.id"), primary_key=True),
+    Column("skill_id", Integer, ForeignKey("skills.id"), primary_key=True)
+)
+
+character_equipments = Table(
+    "character_equipments",
+    Base.metadata,
+    Column("character_id", Integer, ForeignKey("characters.id"), primary_key=True),
+    Column("equipment_id", Integer, ForeignKey("equipments.id"), primary_key=True)
+)
+
+class Job(Base):
+    __tablename__ = "jobs"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), index=True)
+    description = Column(Text, nullable=True)
+    base_stats = Column(JSON, default={})
+    stat_growth = Column(JSON, default={})
+    
+    characters = relationship("Character", back_populates="job")
+
+class Skill(Base):
+    __tablename__ = "skills"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), index=True)
+    description = Column(Text, nullable=True)
+    modifiers = Column(JSON, default=[])
+
+class Equipment(Base):
+    __tablename__ = "equipments"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), index=True)
+    description = Column(Text, nullable=True)
+    rarity = Column(String(20), nullable=True)
+    modifiers = Column(JSON, default=[])
+
+class Glossary(Base):
+    __tablename__ = "glossary"
+    id = Column(Integer, primary_key=True, index=True)
+    term = Column(String(200), index=True)
+    description = Column(Text, nullable=True)

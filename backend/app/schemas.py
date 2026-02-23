@@ -69,6 +69,10 @@ class CharacterBase(BaseModel):
     personality: Optional[str] = None
     memo: Optional[str] = None
     visibility_settings: Dict[str, Any] = {}
+    is_status_enabled: bool = True
+    job_id: Optional[int] = None
+    level: int = 1
+    talent_bonuses: Dict[str, Any] = {}
 
 class CharacterCreate(CharacterBase):
     pass
@@ -76,6 +80,75 @@ class CharacterCreate(CharacterBase):
 class Character(CharacterBase):
     id: int
     attributes: List[CustomAttribute] = []
+    job: Optional['Job'] = None
+    skills: List['Skill'] = []
+    equipments: List['Equipment'] = []
 
     class Config:
         from_attributes = True
+
+# Job
+class JobBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    base_stats: Dict[str, Any] = {}
+    stat_growth: Dict[str, Any] = {}
+
+class JobCreate(JobBase):
+    pass
+
+class Job(JobBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+# Skill
+class SkillBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    modifiers: List[Dict[str, Any]] = []
+
+class SkillCreate(SkillBase):
+    pass
+
+class Skill(SkillBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+# Equipment
+class EquipmentBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    rarity: Optional[str] = None
+    modifiers: List[Dict[str, Any]] = []
+
+class EquipmentCreate(EquipmentBase):
+    pass
+
+class Equipment(EquipmentBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+# Glossary
+class GlossaryBase(BaseModel):
+    term: str
+    description: Optional[str] = None
+
+class GlossaryCreate(GlossaryBase):
+    pass
+
+class Glossary(GlossaryBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+# Character Relationships Update
+class CharacterRelationshipsUpdate(BaseModel):
+    skill_ids: List[int] = []
+    equipment_ids: List[int] = []

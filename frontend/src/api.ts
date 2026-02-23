@@ -24,6 +24,13 @@ export interface Character {
     memo?: string;
     visibility_settings: Record<string, boolean>;
     attributes: CustomAttribute[];
+    is_status_enabled: boolean;
+    job_id?: number;
+    level: number;
+    talent_bonuses: Record<string, any>;
+    job?: Job;
+    skills: Skill[];
+    equipments: Equipment[];
 }
 
 export interface Event {
@@ -50,4 +57,39 @@ export interface CharacterState {
     luk_base: number;
     luk_mod: number;
     visibility_settings: Record<string, boolean>;
+}
+
+export interface Modifier {
+    attribute: string;
+    type: 'flat' | 'percent';
+    value: number;
+}
+
+export interface Job {
+    id: number;
+    name: string;
+    description?: string;
+    base_stats: Record<string, number>;
+    stat_growth: Record<string, number>;
+}
+
+export interface Skill {
+    id: number;
+    name: string;
+    description?: string;
+    modifiers: Modifier[];
+}
+
+export interface Equipment {
+    id: number;
+    name: string;
+    description?: string;
+    rarity?: string;
+    modifiers: Modifier[];
+}
+
+export interface Glossary {
+    id: number;
+    term: string;
+    description?: string;
 }

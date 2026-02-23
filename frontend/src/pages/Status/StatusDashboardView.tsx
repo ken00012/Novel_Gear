@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api, type Event, type Character, type CharacterState } from '../../api';
-import { Plus, ChevronDown, Save, Check, Copy } from 'lucide-react';
+import { Plus, Save, Check, Copy, Trash2 } from 'lucide-react';
 
 export default function StatusDashboardView() {
     const [events, setEvents] = useState<Event[]>([]);
@@ -99,6 +99,20 @@ export default function StatusDashboardView() {
         }
     };
 
+    const handleDeleteEvent = async (e: React.MouseEvent, eventId: number) => {
+        e.stopPropagation();
+        if (!window.confirm('このイベントを削除しますか？\n※関連する各キャラクターのステータス情報も失われます。')) return;
+        try {
+            await api.delete(`/events/${eventId}`);
+            if (selectedEventId === eventId) {
+                setSelectedEventId(null);
+            }
+            await fetchEvents();
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     const handleStatChange = (key: keyof CharacterState, value: string) => {
         if (!currentState) return;
         const numValue = parseInt(value, 10);
@@ -176,13 +190,19 @@ export default function StatusDashboardView() {
                             <div
                                 key={ev.id}
                                 onClick={() => setSelectedEventId(ev.id)}
-                                className={`p-3 rounded-lg border cursor-pointer transition ${selectedEventId === ev.id
+                                className={`p-3 rounded-lg border cursor-pointer transition relative group ${selectedEventId === ev.id
                                     ? 'border-indigo-500 bg-indigo-50 shadow-sm'
                                     : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
                                     }`}
                             >
                                 <div className="text-xs font-bold text-indigo-600 mb-1">{ev.chapter_number}</div>
-                                <div className="text-sm text-gray-800 font-medium">{ev.event_name}</div>
+                                <div className="text-sm text-gray-800 font-medium pr-6">{ev.event_name}</div>
+                                <button
+                                    onClick={(e) => handleDeleteEvent(e, ev.id)}
+                                    className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
                             </div>
                         ))
                     )}

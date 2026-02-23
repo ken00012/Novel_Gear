@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 
 from . import models, schemas
 from .database import engine, get_db
@@ -103,9 +103,18 @@ def create_event(event: schemas.EventCreate, db: Session = Depends(get_db)):
     db.refresh(db_event)
     return db_event
 
+@app.delete("/api/events/{event_id}")
+def delete_event(event_id: int, db: Session = Depends(get_db)):
+    db_event = db.query(models.Event).filter(models.Event.id == event_id).first()
+    if not db_event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    db.delete(db_event)
+    db.commit()
+    return {"ok": True}
+
 # --- Character States ---
 @app.get("/api/states/", response_model=List[schemas.CharacterState])
-def get_states(character_id: int = None, event_id: int = None, db: Session = Depends(get_db)):
+def get_states(character_id: Optional[int] = None, event_id: Optional[int] = None, db: Session = Depends(get_db)):
     query = db.query(models.CharacterState)
     if character_id:
         query = query.filter(models.CharacterState.character_id == character_id)
@@ -130,3 +139,154 @@ def create_or_update_state(character_id: int, state: schemas.CharacterStateCreat
     db.commit()
     db.refresh(db_state)
     return db_state
+
+# --- Character Relationships (Skills/Equipments) ---
+@app.put("/api/characters/{character_id}/relationships", response_model=schemas.Character)
+def update_character_relationships(character_id: int, req: schemas.CharacterRelationshipsUpdate, db: Session = Depends(get_db)):
+    db_character = db.query(models.Character).filter(models.Character.id == character_id).first()
+    if not db_character:
+        raise HTTPException(status_code=404, detail="Character not found")
+    
+    # Update skills
+    skills = db.query(models.Skill).filter(models.Skill.id.in_(req.skill_ids)).all()
+    db_character.skills = skills
+    
+    # Update equipments
+    equipments = db.query(models.Equipment).filter(models.Equipment.id.in_(req.equipment_ids)).all()
+    db_character.equipments = equipments
+
+    db.commit()
+    db.refresh(db_character)
+    return db_character
+
+# --- Jobs ---
+@app.get("/api/jobs/", response_model=List[schemas.Job])
+def read_jobs(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return db.query(models.Job).offset(skip).limit(limit).all()
+
+@app.post("/api/jobs/", response_model=schemas.Job)
+def create_job(job: schemas.JobCreate, db: Session = Depends(get_db)):
+    db_job = models.Job(**job.model_dump())
+    db.add(db_job)
+    db.commit()
+    db.refresh(db_job)
+    return db_job
+
+@app.put("/api/jobs/{job_id}", response_model=schemas.Job)
+def update_job(job_id: int, job: schemas.JobCreate, db: Session = Depends(get_db)):
+    db_job = db.query(models.Job).filter(models.Job.id == job_id).first()
+    if not db_job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    for var, value in job.model_dump().items():
+        setattr(db_job, var, value)
+    db.commit()
+    db.refresh(db_job)
+    return db_job
+
+@app.delete("/api/jobs/{job_id}")
+def delete_job(job_id: int, db: Session = Depends(get_db)):
+    db_job = db.query(models.Job).filter(models.Job.id == job_id).first()
+    if not db_job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    db.delete(db_job)
+    db.commit()
+    return {"ok": True}
+
+# --- Skills ---
+@app.get("/api/skills/", response_model=List[schemas.Skill])
+def read_skills(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return db.query(models.Skill).offset(skip).limit(limit).all()
+
+@app.post("/api/skills/", response_model=schemas.Skill)
+def create_skill(skill: schemas.SkillCreate, db: Session = Depends(get_db)):
+    db_skill = models.Skill(**skill.model_dump())
+    db.add(db_skill)
+    db.commit()
+    db.refresh(db_skill)
+    return db_skill
+
+@app.put("/api/skills/{skill_id}", response_model=schemas.Skill)
+def update_skill(skill_id: int, skill: schemas.SkillCreate, db: Session = Depends(get_db)):
+    db_skill = db.query(models.Skill).filter(models.Skill.id == skill_id).first()
+    if not db_skill:
+        raise HTTPException(status_code=404, detail="Skill not found")
+    for var, value in skill.model_dump().items():
+        setattr(db_skill, var, value)
+    db.commit()
+    db.refresh(db_skill)
+    return db_skill
+
+@app.delete("/api/skills/{skill_id}")
+def delete_skill(skill_id: int, db: Session = Depends(get_db)):
+    db_skill = db.query(models.Skill).filter(models.Skill.id == skill_id).first()
+    if not db_skill:
+        raise HTTPException(status_code=404, detail="Skill not found")
+    db.delete(db_skill)
+    db.commit()
+    return {"ok": True}
+
+# --- Equipments ---
+@app.get("/api/equipments/", response_model=List[schemas.Equipment])
+def read_equipments(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return db.query(models.Equipment).offset(skip).limit(limit).all()
+
+@app.post("/api/equipments/", response_model=schemas.Equipment)
+def create_equipment(equipment: schemas.EquipmentCreate, db: Session = Depends(get_db)):
+    db_equipment = models.Equipment(**equipment.model_dump())
+    db.add(db_equipment)
+    db.commit()
+    db.refresh(db_equipment)
+    return db_equipment
+
+@app.put("/api/equipments/{equipment_id}", response_model=schemas.Equipment)
+def update_equipment(equipment_id: int, equipment: schemas.EquipmentCreate, db: Session = Depends(get_db)):
+    db_equipment = db.query(models.Equipment).filter(models.Equipment.id == equipment_id).first()
+    if not db_equipment:
+        raise HTTPException(status_code=404, detail="Equipment not found")
+    for var, value in equipment.model_dump().items():
+        setattr(db_equipment, var, value)
+    db.commit()
+    db.refresh(db_equipment)
+    return db_equipment
+
+@app.delete("/api/equipments/{equipment_id}")
+def delete_equipment(equipment_id: int, db: Session = Depends(get_db)):
+    db_equipment = db.query(models.Equipment).filter(models.Equipment.id == equipment_id).first()
+    if not db_equipment:
+        raise HTTPException(status_code=404, detail="Equipment not found")
+    db.delete(db_equipment)
+    db.commit()
+    return {"ok": True}
+
+# --- Glossary ---
+@app.get("/api/glossary/", response_model=List[schemas.Glossary])
+def read_glossary(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return db.query(models.Glossary).offset(skip).limit(limit).all()
+
+@app.post("/api/glossary/", response_model=schemas.Glossary)
+def create_glossary(glossary: schemas.GlossaryCreate, db: Session = Depends(get_db)):
+    db_glossary = models.Glossary(**glossary.model_dump())
+    db.add(db_glossary)
+    db.commit()
+    db.refresh(db_glossary)
+    return db_glossary
+
+@app.put("/api/glossary/{glossary_id}", response_model=schemas.Glossary)
+def update_glossary(glossary_id: int, glossary: schemas.GlossaryCreate, db: Session = Depends(get_db)):
+    db_glossary = db.query(models.Glossary).filter(models.Glossary.id == glossary_id).first()
+    if not db_glossary:
+        raise HTTPException(status_code=404, detail="Glossary not found")
+    for var, value in glossary.model_dump().items():
+        setattr(db_glossary, var, value)
+    db.commit()
+    db.refresh(db_glossary)
+    return db_glossary
+
+@app.delete("/api/glossary/{glossary_id}")
+def delete_glossary(glossary_id: int, db: Session = Depends(get_db)):
+    db_glossary = db.query(models.Glossary).filter(models.Glossary.id == glossary_id).first()
+    if not db_glossary:
+        raise HTTPException(status_code=404, detail="Glossary not found")
+    db.delete(db_glossary)
+    db.commit()
+    return {"ok": True}

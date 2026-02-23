@@ -5,6 +5,7 @@ import CharacterDetail from "./pages/Characters/CharacterDetail";
 import StatusDashboard from "./pages/Status/StatusDashboard";
 import PlotDashboard from "./pages/Plot/PlotDashboard";
 import BoardDashboard from "./pages/Board/BoardDashboard";
+import LibraryDashboard from "./pages/Library/LibraryDashboard";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <Route path="characters" element={<CharacterList />} />
           <Route path="characters/:id" element={<CharacterDetail />} />
           <Route path="status" element={<StatusDashboard />} />
+          <Route path="library" element={<LibraryDashboard />} />
           <Route path="board" element={<BoardDashboard />} />
         </Route>
       </Routes>
