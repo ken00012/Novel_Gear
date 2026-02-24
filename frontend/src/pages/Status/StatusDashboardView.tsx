@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api, type Event, type Character, type CharacterState, type Job, type Skill, type Equipment } from '../../api';
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Pencil } from 'lucide-react';
 import StatusEditorPane from '../Characters/components/StatusEditorPane';
 
 export default function StatusDashboardView() {
@@ -20,6 +20,11 @@ export default function StatusDashboardView() {
     const [showNewEvent, setShowNewEvent] = useState(false);
     const [newChapter, setNewChapter] = useState('');
     const [newEventName, setNewEventName] = useState('');
+
+    // Edit Event Form
+    const [editingEventId, setEditingEventId] = useState<number | null>(null);
+    const [editChapter, setEditChapter] = useState('');
+    const [editEventName, setEditEventName] = useState('');
 
     const fetchEvents = async () => {
         try {
@@ -110,6 +115,30 @@ export default function StatusDashboardView() {
         }
     };
 
+    const handleStartEdit = (ev: Event) => {
+        setEditingEventId(ev.id);
+        setEditChapter(ev.chapter_number);
+        setEditEventName(ev.event_name);
+    };
+
+    const handleSaveEditEvent = async (ev: Event) => {
+        if (editChapter === ev.chapter_number && editEventName === ev.event_name) {
+            setEditingEventId(null);
+            return;
+        }
+        try {
+            await api.put(`/events/${ev.id}`, {
+                chapter_number: editChapter,
+                event_name: editEventName,
+                order_index: ev.order_index
+            });
+            setEditingEventId(null);
+            await fetchEvents();
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
     const handleDeleteEvent = async (e: React.MouseEvent, eventId: number) => {
         e.stopPropagation();
         if (!window.confirm('このイベントを削除しますか？\n※関連する各キャラクターのステータス情報も失われます。')) return;
@@ -176,14 +205,60 @@ export default function StatusDashboardView() {
                                     : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
                                     }`}
                             >
-                                <div className="text-xs font-bold text-indigo-600 mb-1">{ev.chapter_number}</div>
-                                <div className="text-sm text-gray-800 font-medium pr-6">{ev.event_name}</div>
-                                <button
-                                    onClick={(e) => handleDeleteEvent(e, ev.id)}
-                                    className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
+                                <div className="pr-16">
+                                    {editingEventId === ev.id ? (
+                                        <div
+                                            className="flex flex-col gap-1"
+                                            onClick={e => e.stopPropagation()}
+                                            onBlur={e => {
+                                                // 親コンテナ外にフォーカスが外れた場合のみ保存（input間の移動は無視）
+                                                if (!e.currentTarget.contains(e.relatedTarget)) {
+                                                    handleSaveEditEvent(ev);
+                                                }
+                                            }}
+                                            onKeyDown={e => {
+                                                if (e.key === 'Enter') handleSaveEditEvent(ev);
+                                                if (e.key === 'Escape') setEditingEventId(null);
+                                            }}
+                                        >
+                                            <input
+                                                value={editChapter}
+                                                onChange={e => setEditChapter(e.target.value)}
+                                                className="text-xs font-bold text-indigo-600 bg-transparent border-b border-indigo-200 focus:outline-none w-full"
+                                                autoFocus
+                                            />
+                                            <input
+                                                value={editEventName}
+                                                onChange={e => setEditEventName(e.target.value)}
+                                                className="text-sm font-medium text-gray-800 bg-transparent border-b border-gray-300 focus:outline-none w-full"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="text-xs font-bold text-indigo-600 mb-1">{ev.chapter_number}</div>
+                                            <div className="text-sm text-gray-800 font-medium">{ev.event_name}</div>
+                                        </>
+                                    )}
+                                </div>
+                                <div className="absolute top-3 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleStartEdit(ev);
+                                        }}
+                                        className="text-gray-400 hover:text-indigo-600 transition p-1"
+                                        title="編集"
+                                    >
+                                        <Pencil size={16} />
+                                    </button>
+                                    <button
+                                        onClick={(e) => handleDeleteEvent(e, ev.id)}
+                                        className="text-gray-400 hover:text-red-500 transition p-1"
+                                        title="削除"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
                             </div>
                         ))
                     )}

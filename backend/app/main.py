@@ -103,6 +103,18 @@ def create_event(event: schemas.EventCreate, db: Session = Depends(get_db)):
     db.refresh(db_event)
     return db_event
 
+@app.put("/api/events/{event_id}", response_model=schemas.Event)
+def update_event(event_id: int, event: schemas.EventCreate, db: Session = Depends(get_db)):
+    db_event = db.query(models.Event).filter(models.Event.id == event_id).first()
+    if not db_event:
+        raise HTTPException(status_code=404, detail="Event not found")
+    for var, value in event.model_dump().items():
+        setattr(db_event, var, value)
+    db.add(db_event)
+    db.commit()
+    db.refresh(db_event)
+    return db_event
+
 @app.delete("/api/events/{event_id}")
 def delete_event(event_id: int, db: Session = Depends(get_db)):
     db_event = db.query(models.Event).filter(models.Event.id == event_id).first()

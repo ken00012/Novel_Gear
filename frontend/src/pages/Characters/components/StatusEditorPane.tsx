@@ -259,9 +259,9 @@ export default function StatusEditorPane({
             </div>
 
             {/* スキルと装備 */}
-            <div className="grid grid-cols-2 gap-8">
+            <div className="flex flex-col gap-8 bg-gray-50 p-6 rounded-xl border border-gray-100 mt-6">
                 {/* 装備 */}
-                <div>
+                <div className="w-full">
                     <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center justify-between">
                         <span>装備品</span>
                         <span className="text-xs font-normal text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{activeEquipments.length} / 5</span>
@@ -295,7 +295,7 @@ export default function StatusEditorPane({
                 </div>
 
                 {/* スキル */}
-                <div>
+                <div className="w-full pt-4 border-t border-gray-200">
                     <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center justify-between">
                         <span>保有スキル</span>
                         <span className="text-xs font-normal text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{activeSkills.length} 個</span>
