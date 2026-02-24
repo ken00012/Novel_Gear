@@ -108,3 +108,30 @@ export interface Plot {
     content?: string | null;
     order_index: number;
 }
+
+// Board Simulator
+export interface BoardThread {
+    id: number;
+    title: string;
+    thread_template: string;
+    post_template: string;
+    created_at: string;
+    posts?: BoardPost[];
+}
+
+export interface BoardPost {
+    id: number;
+    thread_id: number;
+    number: number;
+    name: string;
+    user_id_str: string;
+    content: string;
+    order_index: number;
+}
+
+export interface BoardNamePreset {
+    id: number;
+    name: string;
+    user_id_str?: string | null;
+    order_index: number;
+}

@@ -181,3 +181,51 @@ class Plot(PlotBase):
 
     class Config:
         from_attributes = True
+
+# Board Simulator
+class BoardNamePresetBase(BaseModel):
+    name: str
+    user_id_str: Optional[str] = None
+    order_index: int = 0
+
+class BoardNamePresetCreate(BoardNamePresetBase):
+    pass
+
+class BoardNamePreset(BoardNamePresetBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
+class BoardPostBase(BaseModel):
+    number: int
+    name: str
+    user_id_str: str
+    content: str
+    order_index: int = 0
+
+class BoardPostCreate(BoardPostBase):
+    thread_id: int
+
+class BoardPost(BoardPostBase):
+    id: int
+    thread_id: int
+
+    class Config:
+        from_attributes = True
+
+class BoardThreadBase(BaseModel):
+    title: str
+    thread_template: str = "1: 名無しさん : {{date}} ID:{{id}}\n{{title}}\n"
+    post_template: str = "{{number}}: {{name}} ID:{{id}}\n{{content}}\n"
+
+class BoardThreadCreate(BoardThreadBase):
+    pass
+
+class BoardThread(BoardThreadBase):
+    id: int
+    created_at: str
+    posts: List[BoardPost] = []
+
+    class Config:
+        from_attributes = True

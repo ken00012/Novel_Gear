@@ -357,3 +357,115 @@ def delete_plot(plot_id: int, db: Session = Depends(get_db)):
     db.delete(db_plot)
     db.commit()
     return {"ok": True}
+
+# --- Board Threads ---
+@app.get("/api/board_threads/", response_model=List[schemas.BoardThread])
+def read_board_threads(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return db.query(models.BoardThread).order_by(models.BoardThread.id.desc()).offset(skip).limit(limit).all()
+
+@app.post("/api/board_threads/", response_model=schemas.BoardThread)
+def create_board_thread(thread: schemas.BoardThreadCreate, db: Session = Depends(get_db)):
+    db_thread = models.BoardThread(**thread.model_dump())
+    db.add(db_thread)
+    db.commit()
+    db.refresh(db_thread)
+    return db_thread
+
+@app.put("/api/board_threads/{thread_id}", response_model=schemas.BoardThread)
+def update_board_thread(thread_id: int, thread: schemas.BoardThreadCreate, db: Session = Depends(get_db)):
+    db_thread = db.query(models.BoardThread).filter(models.BoardThread.id == thread_id).first()
+    if not db_thread:
+        raise HTTPException(status_code=404, detail="Thread not found")
+    for var, value in thread.model_dump().items():
+        setattr(db_thread, var, value)
+    db.commit()
+    db.refresh(db_thread)
+    return db_thread
+
+@app.delete("/api/board_threads/{thread_id}")
+def delete_board_thread(thread_id: int, db: Session = Depends(get_db)):
+    db_thread = db.query(models.BoardThread).filter(models.BoardThread.id == thread_id).first()
+    if not db_thread:
+        raise HTTPException(status_code=404, detail="Thread not found")
+    db.delete(db_thread)
+    db.commit()
+    return {"ok": True}
+
+# --- Board Posts ---
+@app.get("/api/board_threads/{thread_id}/posts/", response_model=List[schemas.BoardPost])
+def read_board_posts(thread_id: int, db: Session = Depends(get_db)):
+    return db.query(models.BoardPost).filter(models.BoardPost.thread_id == thread_id).order_by(models.BoardPost.number).all()
+
+@app.post("/api/board_posts/", response_model=schemas.BoardPost)
+def create_board_post(post: schemas.BoardPostCreate, db: Session = Depends(get_db)):
+    db_post = models.BoardPost(**post.model_dump())
+    db.add(db_post)
+    db.commit()
+    db.refresh(db_post)
+    return db_post
+
+@app.put("/api/board_posts/{post_id}", response_model=schemas.BoardPost)
+def update_board_post(post_id: int, post: schemas.BoardPostCreate, db: Session = Depends(get_db)):
+    db_post = db.query(models.BoardPost).filter(models.BoardPost.id == post_id).first()
+    if not db_post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    for var, value in post.model_dump().items():
+        setattr(db_post, var, value)
+    db.commit()
+    db.refresh(db_post)
+    return db_post
+
+@app.delete("/api/board_posts/{post_id}")
+def delete_board_post(post_id: int, db: Session = Depends(get_db)):
+    db_post = db.query(models.BoardPost).filter(models.BoardPost.id == post_id).first()
+    if not db_post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    db.delete(db_post)
+    db.commit()
+    return {"ok": True}
+
+@app.put("/api/board_posts/bulk_update/")
+def bulk_update_board_posts(posts: List[schemas.BoardPost], db: Session = Depends(get_db)):
+    for post in posts:
+        db_post = db.query(models.BoardPost).filter(models.BoardPost.id == post.id).first()
+        if db_post:
+            db_post.number = post.number
+            db_post.order_index = post.order_index
+            db_post.name = post.name
+            db_post.user_id_str = post.user_id_str
+            db_post.content = post.content
+    db.commit()
+    return {"ok": True}
+
+# --- Board Name Presets ---
+@app.get("/api/board_name_presets/", response_model=List[schemas.BoardNamePreset])
+def read_board_name_presets(db: Session = Depends(get_db)):
+    return db.query(models.BoardNamePreset).order_by(models.BoardNamePreset.order_index).all()
+
+@app.post("/api/board_name_presets/", response_model=schemas.BoardNamePreset)
+def create_board_name_preset(preset: schemas.BoardNamePresetCreate, db: Session = Depends(get_db)):
+    db_preset = models.BoardNamePreset(**preset.model_dump())
+    db.add(db_preset)
+    db.commit()
+    db.refresh(db_preset)
+    return db_preset
+
+@app.put("/api/board_name_presets/{preset_id}", response_model=schemas.BoardNamePreset)
+def update_board_name_preset(preset_id: int, preset: schemas.BoardNamePresetCreate, db: Session = Depends(get_db)):
+    db_preset = db.query(models.BoardNamePreset).filter(models.BoardNamePreset.id == preset_id).first()
+    if not db_preset:
+        raise HTTPException(status_code=404, detail="Preset not found")
+    for var, value in preset.model_dump().items():
+        setattr(db_preset, var, value)
+    db.commit()
+    db.refresh(db_preset)
+    return db_preset
+
+@app.delete("/api/board_name_presets/{preset_id}")
+def delete_board_name_preset(preset_id: int, db: Session = Depends(get_db)):
+    db_preset = db.query(models.BoardNamePreset).filter(models.BoardNamePreset.id == preset_id).first()
+    if not db_preset:
+        raise HTTPException(status_code=404, detail="Preset not found")
+    db.delete(db_preset)
+    db.commit()
+    return {"ok": True}

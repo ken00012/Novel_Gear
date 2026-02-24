@@ -162,3 +162,38 @@ class Plot(Base):
     order_index = Column(Integer, default=0, index=True)
 
     event = relationship("Event", backref="plots")
+
+# --- Board Simulator ---
+from datetime import datetime
+
+class BoardThread(Base):
+    __tablename__ = "board_threads"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(200), index=True)
+    thread_template = Column(Text, default="1: 名無しさん : {{date}} ID:{{id}}\n{{title}}\n")
+    post_template = Column(Text, default="{{number}}: {{name}} ID:{{id}}\n{{content}}\n")
+    created_at = Column(String(50), default=lambda: datetime.now().isoformat())
+
+    posts = relationship("BoardPost", back_populates="thread", cascade="all, delete-orphan")
+
+class BoardPost(Base):
+    __tablename__ = "board_posts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    thread_id = Column(Integer, ForeignKey("board_threads.id"))
+    number = Column(Integer, index=True)
+    name = Column(String(100))
+    user_id_str = Column(String(50))
+    content = Column(Text)
+    order_index = Column(Integer, default=0, index=True)
+
+    thread = relationship("BoardThread", back_populates="posts")
+
+class BoardNamePreset(Base):
+    __tablename__ = "board_name_presets"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), index=True)
+    user_id_str = Column(String(50), nullable=True)
+    order_index = Column(Integer, default=0, index=True)
