@@ -140,6 +140,28 @@ def create_or_update_state(character_id: int, state: schemas.CharacterStateCreat
     db.refresh(db_state)
     return db_state
 
+@app.put("/api/characters/{character_id}/states/{state_id}/relationships", response_model=schemas.CharacterState)
+def update_state_relationships(character_id: int, state_id: int, req: schemas.CharacterStateRelationshipsUpdate, db: Session = Depends(get_db)):
+    db_state = db.query(models.CharacterState).filter(
+        models.CharacterState.id == state_id,
+        models.CharacterState.character_id == character_id
+    ).first()
+
+    if not db_state:
+        raise HTTPException(status_code=404, detail="Character State not found")
+    
+    # Update skills
+    skills = db.query(models.Skill).filter(models.Skill.id.in_(req.skill_ids)).all()
+    db_state.skills = skills
+    
+    # Update equipments
+    equipments = db.query(models.Equipment).filter(models.Equipment.id.in_(req.equipment_ids)).all()
+    db_state.equipments = equipments
+
+    db.commit()
+    db.refresh(db_state)
+    return db_state
+
 # --- Character Relationships (Skills/Equipments) ---
 @app.put("/api/characters/{character_id}/relationships", response_model=schemas.Character)
 def update_character_relationships(character_id: int, req: schemas.CharacterRelationshipsUpdate, db: Session = Depends(get_db)):

@@ -44,6 +44,10 @@ export interface CharacterState {
     id: number;
     character_id: number;
     event_id: number;
+    job_id?: number | null;
+    level?: number;
+    skills?: Skill[];
+    equipments?: Equipment[];
     hp_base: number;
     hp_mod: number;
     mp_base: number;
@@ -57,6 +61,7 @@ export interface CharacterState {
     luk_base: number;
     luk_mod: number;
     visibility_settings: Record<string, boolean>;
+    memo?: string;
 }
 
 export interface Modifier {

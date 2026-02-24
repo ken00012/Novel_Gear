@@ -32,6 +32,9 @@ class CharacterStateBase(BaseModel):
     luk_base: int = 0
     luk_mod: int = 0
     visibility_settings: Dict[str, Any] = {}
+    memo: Optional[str] = None
+    job_id: Optional[int] = None
+    level: Optional[int] = None
 
 class CharacterStateCreate(CharacterStateBase):
     event_id: int
@@ -40,9 +43,17 @@ class CharacterState(CharacterStateBase):
     id: int
     character_id: int
     event_id: int
+    job: Optional['Job'] = None
+    skills: List['Skill'] = []
+    equipments: List['Equipment'] = []
 
     class Config:
         from_attributes = True
+
+# CharacterState Relationships Update (for saving state specific skills/equipments)
+class CharacterStateRelationshipsUpdate(BaseModel):
+    skill_ids: List[int] = []
+    equipment_ids: List[int] = []
 
 # Event
 class EventBase(BaseModel):

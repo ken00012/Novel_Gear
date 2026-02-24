@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, type Character } from '../../api';
-import { UserPlus, Settings, BookOpen } from 'lucide-react';
+import { UserPlus, Settings, Trash2 } from 'lucide-react';
 
 export default function CharacterList() {
     const navigate = useNavigate();
@@ -34,6 +34,17 @@ export default function CharacterList() {
         }
     };
 
+    const handleDeleteCharacter = async (e: React.MouseEvent, id: number, name: string) => {
+        e.stopPropagation();
+        if (!window.confirm(`「${name}」を削除しますか？\n関連するステータス等のデータも全て消去されます。`)) return;
+        try {
+            await api.delete(`/characters/${id}`);
+            fetchCharacters();
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     return (
         <div className="p-8">
             <div className="flex justify-between items-center mb-6">
@@ -55,26 +66,29 @@ export default function CharacterList() {
                     <div key={char.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition">
                         <div className="flex items-start justify-between">
                             <div>
-                                <h3 className="font-bold text-lg text-gray-900">{char.name}</h3>
+                                <h3 className="font-bold text-lg text-gray-900 group-hover:text-indigo-600 transition">{char.name}</h3>
                                 <p className="text-sm text-gray-500 mt-1">{char.faction || '陣営未設定'}</p>
                             </div>
-                            <div className="h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600">
-                                {char.name.charAt(0)}
+                            <div className="flex flex-col items-end gap-2">
+                                <div className="h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">
+                                    {char.name.charAt(0)}
+                                </div>
+                                <button
+                                    onClick={(e) => handleDeleteCharacter(e, char.id, char.name)}
+                                    className="text-gray-300 hover:text-red-500 transition p-1"
+                                    title="削除"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
                             </div>
                         </div>
 
                         <div className="mt-4 pt-4 border-t border-gray-50 flex gap-3">
                             <button
                                 onClick={() => navigate(`/characters/${char.id}`)}
-                                className="flex-1 flex justify-center items-center gap-2 text-sm text-gray-600 hover:text-indigo-600 bg-gray-50 py-2 rounded-lg transition"
+                                className="flex-1 flex justify-center items-center gap-2 text-sm text-white bg-indigo-600 hover:bg-indigo-700 py-2.5 rounded-lg transition font-medium shadow-sm"
                             >
-                                <BookOpen size={16} /> 詳細
-                            </button>
-                            <button
-                                onClick={() => navigate(`/characters/${char.id}`)}
-                                className="flex-1 flex justify-center items-center gap-2 text-sm text-gray-600 hover:text-indigo-600 bg-gray-50 py-2 rounded-lg transition"
-                            >
-                                <Settings size={16} /> 設定
+                                <Settings size={16} /> 詳細編集
                             </button>
                         </div>
                     </div>

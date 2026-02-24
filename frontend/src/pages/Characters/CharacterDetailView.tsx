@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { api, type Character, type CustomAttribute, type Job, type Skill, type Equipment } from '../../api';
-import { ArrowLeft, Plus, Trash2, Save, Check, Copy, User, Swords, PlusCircle, X } from 'lucide-react';
+import { api, type Character, type CustomAttribute, type Job, type Skill, type Equipment, type Event, type CharacterState } from '../../api';
+import { ArrowLeft, Plus, Trash2, Copy, User, Swords, X, Loader2, Check } from 'lucide-react';
+import StatusEditorPane from './components/StatusEditorPane';
 
 const STAT_LABELS: Record<string, string> = {
     hp: 'HP', mp: 'MP', str: '筋力', mag: '魔力', spd: '敏捷', luk: '運'
@@ -19,8 +20,12 @@ export default function CharacterDetailView() {
     const [availableSkills, setAvailableSkills] = useState<Skill[]>([]);
     const [availableEquipments, setAvailableEquipments] = useState<Equipment[]>([]);
 
-    const [isSaving, setIsSaving] = useState(false);
-    const [saveSuccess, setSaveSuccess] = useState(false);
+    // Phase 3 extensions
+    const [events, setEvents] = useState<Event[]>([]);
+    const [selectedEventId, setSelectedEventId] = useState<number | null>(null);
+    const [currentState, setCurrentState] = useState<CharacterState | undefined>(undefined);
+
+    const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
     // For new custom attribute
     const [newAttrName, setNewAttrName] = useState('');
@@ -31,11 +36,12 @@ export default function CharacterDetailView() {
 
     const fetchData = async () => {
         try {
-            const [charRes, jobsRes, skillsRes, equipsRes] = await Promise.all([
+            const [charRes, jobsRes, skillsRes, equipsRes, eventsRes] = await Promise.all([
                 api.get<Character>(`/characters/${id}`),
                 api.get<Job[]>('/jobs/'),
                 api.get<Skill[]>('/skills/'),
-                api.get<Equipment[]>('/equipments/')
+                api.get<Equipment[]>('/equipments/'),
+                api.get<Event[]>('/events/')
             ]);
             // Ensure talent_bonuses is initialized
             const charData = charRes.data;
@@ -46,6 +52,18 @@ export default function CharacterDetailView() {
             setAvailableJobs(jobsRes.data);
             setAvailableSkills(skillsRes.data);
             setAvailableEquipments(equipsRes.data);
+            setEvents(eventsRes.data);
+
+            if (selectedEventId) {
+                const statesRes = await api.get<CharacterState[]>(`/states/?event_id=${selectedEventId}&character_id=${id}`);
+                if (statesRes.data.length > 0) {
+                    setCurrentState(statesRes.data[0]);
+                } else {
+                    setCurrentState(undefined); // undefined signifies fallback to Global Character
+                }
+            } else {
+                setCurrentState(undefined); // undefined signifies fallback to Global Character
+            }
         } catch (e) {
             console.error(e);
             navigate('/characters');
@@ -54,139 +72,57 @@ export default function CharacterDetailView() {
 
     useEffect(() => {
         fetchData();
-    }, [id]);
+    }, [id, selectedEventId]);
 
     const handleUpdateBasicInfo = (key: keyof Character, value: any) => {
         if (!character) return;
         setCharacter({ ...character, [key]: value });
     };
 
-    // Calculate dynamic stats
-    const computedStats = () => {
-        if (!character || !character.is_status_enabled) return null;
-
-        const currentJob = availableJobs.find(j => j.id === character.job_id);
-        const level = character.level || 1;
-
-        const finalStats: Record<string, { base: number, final: number, bonusStr: string }> = {};
-
-        STAT_KEYS.forEach(k => {
-            const jobBase = currentJob?.base_stats?.[k] || 0;
-            const jobGrowth = currentJob?.stat_growth?.[k] || 0;
-            const talent = character.talent_bonuses?.[k] || 0;
-
-            const baseStat = jobBase + (jobGrowth * (level - 1)) + talent;
-
-            let flatBonus = 0;
-            let percentBonus = 0;
-
-            const allModifiers = [
-                ...(character.skills || []).flatMap(s => s.modifiers || []),
-                ...(character.equipments || []).flatMap(e => e.modifiers || [])
-            ];
-
-            allModifiers.filter(m => m.attribute === k).forEach(m => {
-                if (m.type === 'flat') flatBonus += m.value;
-                if (m.type === 'percent') percentBonus += m.value;
-            });
-
-            const finalVal = Math.floor(baseStat * (1 + percentBonus / 100)) + flatBonus;
-
-            let bonusStr = '';
-            if (percentBonus > 0 || flatBonus > 0) {
-                bonusStr = ` (基本${baseStat}`;
-                if (percentBonus > 0) bonusStr += ` +${percentBonus}%`;
-                if (flatBonus > 0) bonusStr += ` +${flatBonus}`;
-                bonusStr += ')';
-            }
-            if (percentBonus < 0 || flatBonus < 0) {
-                // handle negative
-                bonusStr = ` (基本${baseStat} ${percentBonus ? percentBonus + '%' : ''} ${flatBonus ? flatBonus : ''})`;
-            }
-
-            finalStats[k] = { base: baseStat, final: finalVal, bonusStr };
-        });
-
-        return finalStats;
-    };
-
-    const handleTalentBonusChange = (statKey: string, val: string) => {
-        if (!character) return;
-        const bonuses = { ...(character.talent_bonuses || {}) };
-        bonuses[statKey] = parseInt(val) || 0;
-        setCharacter({ ...character, talent_bonuses: bonuses });
-    };
-
-    const handleAddSkill = (skillIdStr: string) => {
-        if (!character || !skillIdStr) return;
-        const skillId = parseInt(skillIdStr);
-        if (character.skills.find(s => s.id === skillId)) return; // Already exists
-        const skill = availableSkills.find(s => s.id === skillId);
-        if (skill) {
-            setCharacter({ ...character, skills: [...character.skills, skill] });
-        }
-    };
-
-    const handleRemoveSkill = (skillId: number) => {
-        if (!character) return;
-        setCharacter({ ...character, skills: character.skills.filter(s => s.id !== skillId) });
-    };
-
-    const handleAddEquipment = (eqIdStr: string) => {
-        if (!character || !eqIdStr) return;
-        const eqId = parseInt(eqIdStr);
-        if (character.equipments.find(e => e.id === eqId)) return; // Already exists
-        const eq = availableEquipments.find(e => e.id === eqId);
-        if (eq) {
-            setCharacter({ ...character, equipments: [...character.equipments, eq] });
-        }
-    };
-
-    const handleRemoveEquipment = (eqId: number) => {
-        if (!character) return;
-        setCharacter({ ...character, equipments: character.equipments.filter(e => e.id !== eqId) });
-    };
-
-    const handleSaveCharacter = async () => {
-        if (!character) return;
-        setIsSaving(true);
+    const handleSaveCharacter = useCallback(async (charToSave: Character) => {
+        setSaveStatus('saving');
         try {
-            // 1. Save Basic & Status primitive fields
             await api.put(`/characters/${id}`, {
-                name: character.name,
-                age: character.age,
-                gender: character.gender,
-                faction: character.faction,
-                appearance: character.appearance,
-                personality: character.personality,
-                memo: character.memo,
-                visibility_settings: character.visibility_settings,
-                is_status_enabled: character.is_status_enabled,
-                job_id: character.job_id,
-                level: character.level,
-                talent_bonuses: character.talent_bonuses
+                name: charToSave.name,
+                age: charToSave.age,
+                gender: charToSave.gender,
+                faction: charToSave.faction,
+                appearance: charToSave.appearance,
+                personality: charToSave.personality,
+                memo: charToSave.memo,
+                visibility_settings: charToSave.visibility_settings as Record<string, any>,
+                is_status_enabled: charToSave.is_status_enabled,
+                job_id: charToSave.job_id,
+                level: charToSave.level,
+                talent_bonuses: charToSave.talent_bonuses as Record<string, any>
             });
-
-            // 2. Save Relationships (Skills & Equipments)
             await api.put(`/characters/${id}/relationships`, {
-                skill_ids: character.skills.map(s => s.id),
-                equipment_ids: character.equipments.map(e => e.id)
+                skill_ids: charToSave.skills.map(s => s.id),
+                equipment_ids: charToSave.equipments.map(e => e.id)
             });
-
-            // Refresh to get potentially computed Job data etc.
-            await fetchData();
-
-            setSaveSuccess(true);
-            setTimeout(() => setSaveSuccess(false), 3000);
+            setSaveStatus('saved');
+            setTimeout(() => setSaveStatus('idle'), 2000);
         } catch (e) {
             console.error(e);
+            setSaveStatus('idle');
         }
-        setIsSaving(false);
-    };
+    }, [id]);
+
+    // デバウンス用のタイマー
+    useEffect(() => {
+        if (!character) return;
+        const timer = setTimeout(() => {
+            handleSaveCharacter(character);
+        }, 1000);
+        return () => clearTimeout(timer);
+    }, [character, handleSaveCharacter]);
+
+    // computedStats, get/set skill & equipment functions has been moved inside StatusEditorPane and removed here.
 
     const handleAddAttribute = async () => {
-        if (!newAttrName.trim()) return;
+        if (!newAttrName.trim() || !character) return;
         try {
+            await handleSaveCharacter(character); // Save basic info first to prevent data loss
             await api.post(`/characters/${id}/attributes/`, {
                 attribute_name: newAttrName,
                 attribute_value: newAttrValue,
@@ -201,7 +137,9 @@ export default function CharacterDetailView() {
     };
 
     const handleDeleteAttribute = async (attrId: number) => {
+        if (!character) return;
         try {
+            await handleSaveCharacter(character);
             await api.delete(`/attributes/${attrId}`);
             fetchData();
         } catch (e) {
@@ -246,21 +184,9 @@ export default function CharacterDetailView() {
             });
         }
         if (character.is_status_enabled) {
-            const stats = computedStats();
-            if (stats) {
-                text += `\n[ステータス]\n`;
-                const jName = availableJobs.find(j => j.id === character.job_id)?.name || '未設定';
-                text += `ジョブ: ${jName} (Lv.${character.level})\n`;
-                STAT_KEYS.forEach(k => {
-                    text += `${STAT_LABELS[k]}: ${stats[k].final}\n`;
-                });
-                if (character.skills.length > 0) {
-                    text += `スキル: ${character.skills.map(s => s.name).join(', ')}\n`;
-                }
-                if (character.equipments.length > 0) {
-                    text += `装備: ${character.equipments.map(e => e.name).join(', ')}\n`;
-                }
-            }
+            // Note: Since Export logic depends heavily on computed stats, 
+            // Phase 3 simplifies export to mainly profile aspects unless integrated.
+            text += `\n(詳細なステータス出力は「ステータス・装備・スキル」タブ側で行えます)\n`;
         }
         return text;
     };
@@ -294,22 +220,17 @@ export default function CharacterDetailView() {
                         {character.name} <span className="text-gray-400 text-lg font-normal ml-2">設定・ステータス</span>
                     </h2>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 text-sm">
+                        {saveStatus === 'saving' && <span className="flex items-center text-gray-400 gap-1"><Loader2 size={14} className="animate-spin" /> 保存中...</span>}
+                        {saveStatus === 'saved' && <span className="flex items-center text-green-600 gap-1"><Check size={14} /> 保存しました</span>}
+                    </div>
                     <button
                         onClick={handleOpenExportModal}
-                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-indigo-600 text-indigo-600 hover:bg-indigo-50 transition font-medium"
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-lg border border-indigo-600 text-indigo-600 hover:bg-indigo-50 transition font-medium text-sm"
                     >
-                        <Copy size={18} />
+                        <Copy size={16} />
                         設定を出力
-                    </button>
-                    <button
-                        onClick={handleSaveCharacter}
-                        disabled={isSaving}
-                        className={`flex items-center gap-2 px-6 py-2.5 rounded-lg transition text-white font-medium ${saveSuccess ? 'bg-green-500 hover:bg-green-600' : 'bg-indigo-600 hover:bg-indigo-700'
-                            }`}
-                    >
-                        {saveSuccess ? <Check size={18} /> : <Save size={18} />}
-                        {saveSuccess ? '保存しました' : isSaving ? '保存中...' : '変更を保存'}
                     </button>
                 </div>
             </div>
@@ -453,155 +374,39 @@ export default function CharacterDetailView() {
                             </div>
 
                             {character.is_status_enabled ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="space-y-5">
-                                        <div className="flex gap-4">
-                                            <div className="flex-1">
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">ジョブ（クラス）</label>
-                                                <select
-                                                    value={character.job_id || ''}
-                                                    onChange={e => handleUpdateBasicInfo('job_id', e.target.value ? parseInt(e.target.value) : null)}
-                                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-indigo-500 bg-white"
-                                                >
-                                                    <option value="">（未設定）</option>
-                                                    {availableJobs.map(job => (
-                                                        <option key={job.id} value={job.id}>{job.name}</option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <div className="w-24">
-                                                <label className="block text-sm font-medium text-gray-700 mb-1">レベル</label>
-                                                <input
-                                                    type="number"
-                                                    min="1"
-                                                    max="999"
-                                                    value={character.level}
-                                                    onChange={e => handleUpdateBasicInfo('level', parseInt(e.target.value) || 1)}
-                                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-indigo-500"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="bg-indigo-50 rounded-lg p-5 border border-indigo-100 shadow-inner">
-                                            <h4 className="font-bold text-indigo-900 text-sm mb-4 flex items-center justify-between">
-                                                <span>最終ステータス</span>
-                                                <span className="text-xs font-normal text-indigo-600 bg-white px-2 py-0.5 rounded-full border border-indigo-200">自動計算</span>
-                                            </h4>
-
-                                            {(() => {
-                                                const stats = computedStats();
-                                                if (!stats) return null;
-                                                return (
-                                                    <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                                                        {STAT_KEYS.map(k => (
-                                                            <div key={k} className="flex flex-col bg-white px-3 py-2 rounded-lg border border-indigo-100">
-                                                                <span className="text-xs font-bold text-gray-500">{STAT_LABELS[k]}</span>
-                                                                <div className="flex items-baseline gap-2">
-                                                                    <span className="text-xl font-mono font-bold text-indigo-700">
-                                                                        {stats[k].final}
-                                                                    </span>
-                                                                    <span className="text-[10px] text-gray-400 font-mono">
-                                                                        {stats[k].bonusStr}
-                                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                );
-                                            })()}
-                                        </div>
-
-                                        <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                            <h4 className="font-bold text-gray-700 text-sm mb-3">タレントボーナス (個別補正)</h4>
-                                            <div className="grid grid-cols-3 gap-3">
-                                                {STAT_KEYS.map(k => (
-                                                    <div key={`talent-${k}`}>
-                                                        <label className="block text-xs text-gray-500 mb-1">{STAT_LABELS[k]}</label>
-                                                        <input
-                                                            type="number"
-                                                            value={character.talent_bonuses?.[k] || 0}
-                                                            onChange={e => handleTalentBonusChange(k, e.target.value)}
-                                                            className="w-full border border-gray-300 rounded px-2 py-1 outline-none text-sm font-mono"
-                                                        />
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <p className="text-xs text-gray-400 mt-2">※基礎値に直接加算される才能補正です</p>
-                                        </div>
+                                <div className="space-y-6">
+                                    {/* Timeline Selector */}
+                                    <div className="bg-indigo-50 border border-indigo-100 p-4 rounded-lg flex items-center gap-4">
+                                        <label className="font-bold text-indigo-900 whitespace-nowrap">【対象タイムライン選択】</label>
+                                        <select
+                                            value={selectedEventId || ''}
+                                            onChange={e => setSelectedEventId(e.target.value ? Number(e.target.value) : null)}
+                                            className="flex-1 px-4 py-2 border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none font-medium text-gray-700 max-w-md"
+                                        >
+                                            <option value="">初期設定 (デフォルト)</option>
+                                            {events.map(ev => (
+                                                <option key={ev.id} value={ev.id}>{ev.chapter_number} - {ev.event_name}</option>
+                                            ))}
+                                        </select>
+                                        <p className="text-xs text-indigo-600">※変更すると下の内容が切り替わります</p>
                                     </div>
 
-                                    <div className="space-y-6">
-                                        {/* Skills */}
-                                        <div>
-                                            <h4 className="font-bold text-gray-700 mb-2 border-b pb-1">保有スキル</h4>
-                                            <div className="flex items-center gap-2 mb-3">
-                                                <select id="skill-add-select" className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none">
-                                                    <option value="">追加するスキルを選択...</option>
-                                                    {availableSkills.map(s => (
-                                                        <option key={s.id} value={s.id}>{s.name}</option>
-                                                    ))}
-                                                </select>
-                                                <button
-                                                    onClick={() => {
-                                                        const el = document.getElementById('skill-add-select') as HTMLSelectElement;
-                                                        handleAddSkill(el.value);
-                                                        el.value = '';
-                                                    }}
-                                                    className="bg-indigo-50 p-2 rounded text-indigo-600 hover:bg-indigo-100 transition"
-                                                >
-                                                    <PlusCircle size={20} />
-                                                </button>
-                                            </div>
-                                            <div className="flex flex-wrap gap-2">
-                                                {character.skills.map(s => (
-                                                    <div key={s.id} className="bg-indigo-50 text-indigo-700 border border-indigo-200 px-3 py-1.5 rounded-full text-sm flex items-center gap-2">
-                                                        <span>{s.name}</span>
-                                                        <button onClick={() => handleRemoveSkill(s.id)} className="text-indigo-400 hover:text-red-500 transition">
-                                                            <Trash2 size={14} />
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                                {character.skills.length === 0 && <span className="text-sm text-gray-400 italic">スキルがありません</span>}
-                                            </div>
+                                    {/* Status Editor Pane */}
+                                    {selectedEventId && currentState === undefined ? (
+                                        <div className="p-8 text-center text-gray-400">
+                                            <Loader2 size={24} className="animate-spin mx-auto mb-2" />
+                                            データを読み込み中...
                                         </div>
-
-                                        {/* Equipments */}
-                                        <div>
-                                            <h4 className="font-bold text-gray-700 mb-2 border-b pb-1">装備品</h4>
-                                            <div className="flex items-center gap-2 mb-3">
-                                                <select id="eq-add-select" className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm outline-none">
-                                                    <option value="">追加する装備品を選択...</option>
-                                                    {availableEquipments.map(e => (
-                                                        <option key={e.id} value={e.id}>[{e.rarity || 'N'}] {e.name}</option>
-                                                    ))}
-                                                </select>
-                                                <button
-                                                    onClick={() => {
-                                                        const el = document.getElementById('eq-add-select') as HTMLSelectElement;
-                                                        handleAddEquipment(el.value);
-                                                        el.value = '';
-                                                    }}
-                                                    className="bg-indigo-50 p-2 rounded text-indigo-600 hover:bg-indigo-100 transition"
-                                                >
-                                                    <PlusCircle size={20} />
-                                                </button>
-                                            </div>
-                                            <div className="flex flex-col gap-2">
-                                                {character.equipments.map(eq => (
-                                                    <div key={eq.id} className="bg-gray-50 border border-gray-200 px-3 py-2 rounded-lg text-sm flex justify-between items-center group">
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="font-bold text-indigo-700">{eq.name}</span>
-                                                            <span className="text-[10px] px-1.5 rounded bg-gray-200 text-gray-600">{eq.rarity || 'N'}</span>
-                                                        </div>
-                                                        <button onClick={() => handleRemoveEquipment(eq.id)} className="text-gray-400 opacity-0 group-hover:opacity-100 hover:text-red-500 transition">
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                                {character.equipments.length === 0 && <span className="text-sm text-gray-400 italic">装備品がありません</span>}
-                                            </div>
-                                        </div>
-                                    </div>
+                                    ) : (
+                                        <StatusEditorPane
+                                            character={character}
+                                            currentState={currentState || null}
+                                            availableJobs={availableJobs}
+                                            availableSkills={availableSkills}
+                                            availableEquipments={availableEquipments}
+                                            onStateChange={fetchData}
+                                        />
+                                    )}
                                 </div>
                             ) : (
                                 <div className="py-12 text-center">

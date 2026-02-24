@@ -77,10 +77,19 @@ class CharacterState(Base):
     # visibility for stats
     visibility_settings = Column(JSON, default={})
 
+    # Event specific note
+    memo = Column(Text, nullable=True)
+
+    job_id = Column(Integer, ForeignKey("jobs.id"), nullable=True)
+    level = Column(Integer, nullable=True)
+
     character = relationship("Character", back_populates="states")
     event = relationship("Event", back_populates="states")
+    job = relationship("Job", foreign_keys=[job_id])
+    skills = relationship("Skill", secondary="character_state_skills")
+    equipments = relationship("Equipment", secondary="character_state_equipments")
 
-# Many-to-Many Association Tables
+# Many-to-Many Association Tables for Global Character
 character_skills = Table(
     "character_skills",
     Base.metadata,
@@ -92,6 +101,21 @@ character_equipments = Table(
     "character_equipments",
     Base.metadata,
     Column("character_id", Integer, ForeignKey("characters.id"), primary_key=True),
+    Column("equipment_id", Integer, ForeignKey("equipments.id"), primary_key=True)
+)
+
+# Many-to-Many Association Tables for CharacterState (Event specific)
+character_state_skills = Table(
+    "character_state_skills",
+    Base.metadata,
+    Column("state_id", Integer, ForeignKey("character_states.id"), primary_key=True),
+    Column("skill_id", Integer, ForeignKey("skills.id"), primary_key=True)
+)
+
+character_state_equipments = Table(
+    "character_state_equipments",
+    Base.metadata,
+    Column("state_id", Integer, ForeignKey("character_states.id"), primary_key=True),
     Column("equipment_id", Integer, ForeignKey("equipments.id"), primary_key=True)
 )
 
