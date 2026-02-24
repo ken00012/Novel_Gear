@@ -163,3 +163,21 @@ class Glossary(GlossaryBase):
 class CharacterRelationshipsUpdate(BaseModel):
     skill_ids: List[int] = []
     equipment_ids: List[int] = []
+
+# Plot (起承転結ボード)
+class PlotBase(BaseModel):
+    event_id: Optional[int] = None
+    phase_type: str
+    title: str
+    character_arc: Optional[str] = None
+    content: Optional[str] = None
+    order_index: int = 0
+
+class PlotCreate(PlotBase):
+    pass
+
+class Plot(PlotBase):
+    id: int
+
+    class Config:
+        from_attributes = True

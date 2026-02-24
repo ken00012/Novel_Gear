@@ -324,3 +324,36 @@ def delete_glossary(glossary_id: int, db: Session = Depends(get_db)):
     db.delete(db_glossary)
     db.commit()
     return {"ok": True}
+
+# --- Plots ---
+@app.get("/api/plots/", response_model=List[schemas.Plot])
+def read_plots(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return db.query(models.Plot).order_by(models.Plot.order_index).offset(skip).limit(limit).all()
+
+@app.post("/api/plots/", response_model=schemas.Plot)
+def create_plot(plot: schemas.PlotCreate, db: Session = Depends(get_db)):
+    db_plot = models.Plot(**plot.model_dump())
+    db.add(db_plot)
+    db.commit()
+    db.refresh(db_plot)
+    return db_plot
+
+@app.put("/api/plots/{plot_id}", response_model=schemas.Plot)
+def update_plot(plot_id: int, plot: schemas.PlotCreate, db: Session = Depends(get_db)):
+    db_plot = db.query(models.Plot).filter(models.Plot.id == plot_id).first()
+    if not db_plot:
+        raise HTTPException(status_code=404, detail="Plot not found")
+    for var, value in plot.model_dump().items():
+        setattr(db_plot, var, value)
+    db.commit()
+    db.refresh(db_plot)
+    return db_plot
+
+@app.delete("/api/plots/{plot_id}")
+def delete_plot(plot_id: int, db: Session = Depends(get_db)):
+    db_plot = db.query(models.Plot).filter(models.Plot.id == plot_id).first()
+    if not db_plot:
+        raise HTTPException(status_code=404, detail="Plot not found")
+    db.delete(db_plot)
+    db.commit()
+    return {"ok": True}

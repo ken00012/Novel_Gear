@@ -149,3 +149,16 @@ class Glossary(Base):
     id = Column(Integer, primary_key=True, index=True)
     term = Column(String(200), index=True)
     description = Column(Text, nullable=True)
+
+class Plot(Base):
+    __tablename__ = "plots"
+
+    id = Column(Integer, primary_key=True, index=True)
+    event_id = Column(Integer, ForeignKey("events.id"), nullable=True)
+    phase_type = Column(String(20), index=True)
+    title = Column(String(200))
+    character_arc = Column(Text, nullable=True)
+    content = Column(Text, nullable=True)
+    order_index = Column(Integer, default=0, index=True)
+
+    event = relationship("Event", backref="plots")

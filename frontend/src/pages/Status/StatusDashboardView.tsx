@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api, type Event, type Character, type CharacterState, type Job, type Skill, type Equipment } from '../../api';
 import { Plus, Trash2, Pencil } from 'lucide-react';
 import StatusEditorPane from '../Characters/components/StatusEditorPane';
@@ -26,10 +27,22 @@ export default function StatusDashboardView() {
     const [editChapter, setEditChapter] = useState('');
     const [editEventName, setEditEventName] = useState('');
 
+    const [searchParams] = useSearchParams();
+
     const fetchEvents = async () => {
         try {
             const res = await api.get<Event[]>('/events/');
             setEvents(res.data);
+
+            const eventIdParam = searchParams.get('eventId');
+            if (eventIdParam) {
+                const id = parseInt(eventIdParam, 10);
+                if (res.data.some(e => e.id === id)) {
+                    setSelectedEventId(id);
+                    return;
+                }
+            }
+
             if (res.data.length > 0 && !selectedEventId) {
                 setSelectedEventId(res.data[0].id);
             }

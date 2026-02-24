@@ -98,3 +98,13 @@ export interface Glossary {
     term: string;
     description?: string;
 }
+
+export interface Plot {
+    id: number;
+    event_id?: number | null;
+    phase_type: string;  // 'ki', 'sho', 'ten', 'ketsu'
+    title: string;
+    character_arc?: string | null;
+    content?: string | null;
+    order_index: number;
+}
