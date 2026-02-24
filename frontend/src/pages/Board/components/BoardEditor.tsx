@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { api, type BoardThread, type BoardPost, type BoardNamePreset } from '../../../api';
 import LiveWriterInput from './LiveWriterInput';
 import PostItem from './PostItem';
-import { Settings, Copy } from 'lucide-react';
+import { Settings, Copy, Check, X } from 'lucide-react';
 
 interface BoardEditorProps {
     thread: BoardThread;
@@ -13,6 +13,8 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
     const [posts, setPosts] = useState<BoardPost[]>([]);
     const [namePresets, setNamePresets] = useState<BoardNamePreset[]>([]);
     const [showSettings, setShowSettings] = useState(false);
+    const [showPreview, setShowPreview] = useState(false);
+    const [previewText, setPreviewText] = useState('');
 
     // Thread settings temp state
     const [threadTemplate, setThreadTemplate] = useState(thread.thread_template);
@@ -139,13 +141,12 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
         }
     };
 
-    const handleCopyAll = () => {
+    const handlePreview = () => {
         let text = thread.thread_template
             .replace('{{title}}', thread.title)
             .replace('{{date}}', new Date(thread.created_at).toLocaleString('ja-JP'))
-            .replace('{{id}}', 'THREAD_OWNER'); // mock logic for thread owner if needed
+            .replace('{{id}}', 'THREAD_OWNER');
 
-        // Convert escaped \n characters from DB if they exist as literal text
         text = text.replace(/\\n/g, '\n');
 
         posts.forEach(p => {
@@ -158,8 +159,13 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
             text += postText;
         });
 
-        navigator.clipboard.writeText(text);
-        alert('テンプレートに従って全内容をプレーンテキストでコピーしました！');
+        setPreviewText(text);
+        setShowPreview(true);
+    };
+
+    const handleCopyFromPreview = () => {
+        navigator.clipboard.writeText(previewText);
+        setShowPreview(false);
     };
 
     return (
@@ -175,10 +181,10 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
                         <Settings size={16} /> テンプレート設定
                     </button>
                     <button
-                        onClick={handleCopyAll}
+                        onClick={handlePreview}
                         className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white rounded-md text-sm hover:bg-indigo-700 transition font-medium shadow-sm"
                     >
-                        <Copy size={16} /> テキスト出力(コピー)
+                        <Copy size={16} /> プレビューして出力
                     </button>
                 </div>
             </div>
@@ -238,6 +244,46 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
                     onSubmit={(name, idStr, content) => handleAddPost(name, idStr, content)}
                 />
             </div>
+
+            {/* Preview Modal */}
+            {showPreview && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl flex flex-col max-h-[90vh]">
+                        <div className="flex justify-between items-center p-4 border-b">
+                            <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
+                                <Copy size={20} className="text-indigo-600" /> テキスト出力プレビュー
+                            </h3>
+                            <button onClick={() => setShowPreview(false)} className="text-gray-400 hover:text-gray-600 p-1">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="p-4 flex-1 overflow-hidden flex flex-col gap-2">
+                            <p className="text-sm text-gray-600">
+                                以下のテキストがクリップボードにコピーされます。必要に応じてここで最終調整（手書き編集）が可能です。
+                            </p>
+                            <textarea
+                                value={previewText}
+                                onChange={e => setPreviewText(e.target.value)}
+                                className="w-full flex-1 border border-gray-300 rounded-lg p-3 text-sm font-mono whitespace-pre-wrap outline-none focus:ring-2 focus:ring-indigo-500 bg-gray-50"
+                            />
+                        </div>
+                        <div className="p-4 border-t bg-gray-50 flex justify-end gap-2 rounded-b-lg">
+                            <button
+                                onClick={() => setShowPreview(false)}
+                                className="px-4 py-2 border text-gray-700 rounded-md hover:bg-gray-100 transition text-sm font-bold"
+                            >
+                                キャンセル
+                            </button>
+                            <button
+                                onClick={handleCopyFromPreview}
+                                className="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition flex items-center gap-2 text-sm font-bold shadow-sm"
+                            >
+                                <Check size={16} /> コピーして閉じる
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

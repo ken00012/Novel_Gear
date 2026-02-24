@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { api, type BoardNamePreset } from '../../../api';
-import { RefreshCw, Send, PlusCircle } from 'lucide-react';
+import { RefreshCw, Send, PlusCircle, Check, X } from 'lucide-react';
 
 interface LiveWriterInputProps {
     namePresets: BoardNamePreset[];
@@ -12,6 +12,10 @@ export default function LiveWriterInput({ namePresets, onReloadPresets, onSubmit
     const [name, setName] = useState('名無しさん');
     const [userIdStr, setUserIdStr] = useState('');
     const [content, setContent] = useState('');
+
+    const [isAddingPreset, setIsAddingPreset] = useState(false);
+    const [newPresetName, setNewPresetName] = useState('');
+    const [newPresetFixId, setNewPresetFixId] = useState(false);
 
     const generateId = () => {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -36,17 +40,18 @@ export default function LiveWriterInput({ namePresets, onReloadPresets, onSubmit
         }
     };
 
-    const handleAddPreset = async () => {
-        const n = prompt('新しく登録する名前を入力してください');
-        if (!n) return;
-        const confirmId = confirm('現在のIDも合わせて固定登録しますか？（コテハン用）\n※キャンセルを選ぶとIDは名前変更時に自動生成されます');
+    const handleAddPresetSubmit = async () => {
+        if (!newPresetName) return;
         try {
             await api.post('/board_name_presets/', {
-                name: n,
-                user_id_str: confirmId ? userIdStr : null,
+                name: newPresetName,
+                user_id_str: newPresetFixId ? userIdStr : null,
                 order_index: namePresets.length
             });
             onReloadPresets();
+            setIsAddingPreset(false);
+            setNewPresetName('');
+            setNewPresetFixId(false);
         } catch (e) {
             console.error(e);
         }
@@ -77,12 +82,44 @@ export default function LiveWriterInput({ namePresets, onReloadPresets, onSubmit
                         {preset.name}
                     </button>
                 ))}
-                <button
-                    onClick={handleAddPreset}
-                    className="flex items-center gap-1 px-3 py-1 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-full text-xs font-medium border border-gray-200 transition whitespace-nowrap"
-                >
-                    <PlusCircle size={12} /> 登録
-                </button>
+                {isAddingPreset ? (
+                    <div className="flex items-center gap-1.5 px-3 py-1 bg-white border border-indigo-300 rounded-full text-xs shadow-sm">
+                        <input
+                            value={newPresetName}
+                            onChange={e => setNewPresetName(e.target.value)}
+                            placeholder="登録する名前"
+                            className="w-24 outline-none text-xs bg-transparent font-medium text-indigo-900"
+                            autoFocus
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleAddPresetSubmit();
+                                if (e.key === 'Escape') setIsAddingPreset(false);
+                            }}
+                        />
+                        <div className="h-3 border-l border-gray-300 mx-1"></div>
+                        <label className="flex items-center gap-1 text-gray-500 cursor-pointer hover:text-indigo-600 transition" title="現在のIDをコテハンとして固定登録します">
+                            <input
+                                type="checkbox"
+                                checked={newPresetFixId}
+                                onChange={e => setNewPresetFixId(e.target.checked)}
+                                className="w-3 h-3 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                            />
+                            ID固定
+                        </label>
+                        <div className="h-3 border-l border-gray-300 mx-1"></div>
+                        <button onClick={handleAddPresetSubmit} className="text-indigo-600 hover:text-indigo-800 transition"><Check size={14} /></button>
+                        <button onClick={() => setIsAddingPreset(false)} className="text-gray-400 hover:text-red-500 transition"><X size={14} /></button>
+                    </div>
+                ) : (
+                    <button
+                        onClick={() => {
+                            setIsAddingPreset(true);
+                            setNewPresetName(name); // 現在入力中の名前をデフォルトに
+                        }}
+                        className="flex items-center gap-1 px-3 py-1 bg-gray-50 hover:bg-gray-100 text-gray-600 rounded-full text-xs font-medium border border-gray-200 transition whitespace-nowrap"
+                    >
+                        <PlusCircle size={12} /> 登録
+                    </button>
+                )}
             </div>
 
             <div className="flex gap-3">

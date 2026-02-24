@@ -1,11 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { api, type BoardThread } from '../../api';
 import BoardEditor from './components/BoardEditor';
-import { Plus, Trash2, MessageSquare } from 'lucide-react';
+import { Plus, Trash2, MessageSquare, Edit2, Check, X } from 'lucide-react';
 
 export default function BoardDashboard() {
     const [threads, setThreads] = useState<BoardThread[]>([]);
     const [selectedThreadId, setSelectedThreadId] = useState<number | null>(null);
+
+    const [editingThreadId, setEditingThreadId] = useState<number | null>(null);
+    const [editContext, setEditContext] = useState('');
+    const editInputRef = useRef<HTMLInputElement>(null);
 
     const fetchThreads = async () => {
         try {
@@ -23,13 +27,38 @@ export default function BoardDashboard() {
         fetchThreads();
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+    useEffect(() => {
+        // 編集モードに入った時にオートフォーカス
+        if (editingThreadId && editInputRef.current) {
+            editInputRef.current.focus();
+            editInputRef.current.select();
+        }
+    }, [editingThreadId]);
+
     const handleCreateThread = async () => {
-        const title = prompt('新しいスレッドのタイトルを入力してください\n例: 【悲報】勇者、またパーティ追放される');
-        if (!title) return;
         try {
-            const res = await api.post<BoardThread>('/board_threads/', { title });
+            const res = await api.post<BoardThread>('/board_threads/', { title: '新規スレッド' });
             setThreads([res.data, ...threads]);
             setSelectedThreadId(res.data.id);
+            setEditingThreadId(res.data.id);
+            setEditContext('新規スレッド');
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
+    const handleUpdateThreadTitle = async (id: number) => {
+        if (!editContext.trim()) {
+            setEditingThreadId(null);
+            return;
+        }
+        const thread = threads.find(t => t.id === id);
+        if (!thread) return;
+
+        try {
+            await api.put(`/board_threads/${id}`, { ...thread, title: editContext });
+            setThreads(threads.map(t => t.id === id ? { ...t, title: editContext } : t));
+            setEditingThreadId(null);
         } catch (e) {
             console.error(e);
         }
@@ -61,17 +90,53 @@ export default function BoardDashboard() {
                     {threads.map(thread => (
                         <div
                             key={thread.id}
-                            onClick={() => setSelectedThreadId(thread.id)}
-                            className={`p-3 border-b cursor-pointer flex justify-between items-center group transition ${selectedThreadId === thread.id ? 'bg-indigo-50 border-l-4 border-l-indigo-500' : 'hover:bg-gray-100 border-l-4 border-l-transparent'}`}
+                            onClick={() => {
+                                if (editingThreadId !== thread.id) setSelectedThreadId(thread.id);
+                            }}
+                            className={`p-3 border-b cursor-pointer group transition ${selectedThreadId === thread.id ? 'bg-indigo-50 border-l-4 border-l-indigo-500' : 'hover:bg-gray-100 border-l-4 border-l-transparent'}`}
                         >
-                            <div className="truncate text-sm font-medium text-gray-800 flex-1">{thread.title}</div>
-                            <button
-                                onClick={(e) => { e.stopPropagation(); handleDeleteThread(thread.id); }}
-                                className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 p-1 transition"
-                                title="スレッド削除"
-                            >
-                                <Trash2 size={14} />
-                            </button>
+                            {editingThreadId === thread.id ? (
+                                <div className="flex flex-col gap-1">
+                                    <input
+                                        ref={editInputRef}
+                                        value={editContext}
+                                        onChange={e => setEditContext(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') handleUpdateThreadTitle(thread.id);
+                                            if (e.key === 'Escape') setEditingThreadId(null);
+                                        }}
+                                        className="w-full text-sm p-1 border rounded focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    />
+                                    <div className="flex justify-end gap-1">
+                                        <button onClick={(e) => { e.stopPropagation(); handleUpdateThreadTitle(thread.id); }} className="p-1 bg-indigo-600 text-white rounded hover:bg-indigo-700"><Check size={12} /></button>
+                                        <button onClick={(e) => { e.stopPropagation(); setEditingThreadId(null); }} className="p-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"><X size={12} /></button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex justify-between items-center">
+                                    <div className="truncate text-sm font-medium text-gray-800 flex-1 pr-2">{thread.title}</div>
+                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setEditingThreadId(thread.id);
+                                                setEditContext(thread.title);
+                                            }}
+                                            className="text-gray-400 hover:text-indigo-600 p-1"
+                                            title="名前を編集"
+                                        >
+                                            <Edit2 size={14} />
+                                        </button>
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); handleDeleteThread(thread.id); }}
+                                            className="text-gray-400 hover:text-red-500 p-1"
+                                            title="削除"
+                                        >
+                                            <Trash2 size={14} />
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     ))}
                     {threads.length === 0 && (
