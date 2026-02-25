@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api, type BoardNamePreset } from '../../../api';
-import { RefreshCw, Send, PlusCircle, Check, X } from 'lucide-react';
+import { RefreshCw, Send, PlusCircle, Check, X, Settings } from 'lucide-react';
+import BoardNameLibraryEditor from './BoardNameLibraryEditor';
 
 interface LiveWriterInputProps {
     namePresets: BoardNamePreset[];
@@ -16,6 +17,8 @@ export default function LiveWriterInput({ namePresets, onReloadPresets, onSubmit
     const [isAddingPreset, setIsAddingPreset] = useState(false);
     const [newPresetName, setNewPresetName] = useState('');
     const [newPresetFixId, setNewPresetFixId] = useState(false);
+
+    const [showLibraryEditor, setShowLibraryEditor] = useState(false);
 
     const generateId = () => {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
@@ -73,6 +76,14 @@ export default function LiveWriterInput({ namePresets, onReloadPresets, onSubmit
         <div className="flex flex-col gap-3 max-w-5xl mx-auto w-full">
             <div className="flex items-center gap-2 overflow-x-auto pb-1">
                 <span className="text-xs font-bold text-gray-500 whitespace-nowrap">名前ライブラリ:</span>
+                <button
+                    onClick={() => setShowLibraryEditor(true)}
+                    className="p-1 px-2 flex items-center gap-1 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition"
+                    title="名前ライブラリの管理"
+                >
+                    <Settings size={14} />
+                </button>
+                <div className="h-4 border-l border-gray-300 mx-1"></div>
                 {namePresets.map(preset => (
                     <button
                         key={preset.id}
@@ -165,6 +176,13 @@ export default function LiveWriterInput({ namePresets, onReloadPresets, onSubmit
                     </button>
                 </div>
             </div>
+
+            {showLibraryEditor && (
+                <BoardNameLibraryEditor
+                    onClose={() => setShowLibraryEditor(false)}
+                    onListUpdated={onReloadPresets}
+                />
+            )}
         </div>
     );
 }

@@ -212,6 +212,7 @@ class BoardThread(Base):
     title = Column(String(200), index=True)
     thread_template = Column(Text, default="1: 名無しさん : {{date}} ID:{{id}}\n{{title}}\n")
     post_template = Column(Text, default="{{number}}: {{name}} ID:{{id}}\n{{content}}\n")
+    start_index = Column(Integer, default=1)
     created_at = Column(String(50), default=lambda: datetime.now().isoformat())
 
     posts = relationship("BoardPost", back_populates="thread", cascade="all, delete-orphan")

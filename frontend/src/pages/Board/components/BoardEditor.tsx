@@ -19,6 +19,7 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
     // Thread settings temp state
     const [threadTemplate, setThreadTemplate] = useState(thread.thread_template);
     const [postTemplate, setPostTemplate] = useState(thread.post_template);
+    const [startIndex, setStartIndex] = useState(thread.start_index);
 
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -50,6 +51,7 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
         fetchNamePresets();
         setThreadTemplate(thread.thread_template);
         setPostTemplate(thread.post_template);
+        setStartIndex(thread.start_index);
     }, [thread]);
 
     const handleSaveTemplates = async () => {
@@ -57,7 +59,8 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
             await api.put(`/board_threads/${thread.id}`, {
                 title: thread.title,
                 thread_template: threadTemplate,
-                post_template: postTemplate
+                post_template: postTemplate,
+                start_index: startIndex
             });
             setShowSettings(false);
             onThreadUpdate();
@@ -67,10 +70,10 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
     };
 
     const handleRenumberAndSave = async (newPosts: BoardPost[]) => {
-        // Renumber based on array index
+        // Renumber based on array index and start_index
         const renumbered = newPosts.map((p, index) => ({
             ...p,
-            number: index + 1,
+            number: index + thread.start_index,
             order_index: index
         }));
 
@@ -88,7 +91,7 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
 
     const handleAddPost = async (name: string, userIdStr: string, content: string, insertIndex: number = -1) => {
         try {
-            const targetNumber = insertIndex >= 0 ? insertIndex + 1 : posts.length + 1;
+            const targetNumber = insertIndex >= 0 ? insertIndex + thread.start_index : posts.length + thread.start_index;
 
             const res = await api.post<BoardPost>('/board_posts/', {
                 thread_id: thread.id,
@@ -96,7 +99,7 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
                 name,
                 user_id_str: userIdStr,
                 content,
-                order_index: targetNumber - 1
+                order_index: insertIndex >= 0 ? insertIndex : posts.length
             });
 
             let newPosts = [...posts];
@@ -213,6 +216,16 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
                                 className="w-full text-xs font-mono p-2 border rounded focus:ring-1 focus:outline-none" rows={3}
                             />
                         </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-600 mb-1">開始レス番号</label>
+                            <input
+                                type="number"
+                                min={1}
+                                value={startIndex}
+                                onChange={e => setStartIndex(parseInt(e.target.value) || 1)}
+                                className="w-32 text-xs font-mono p-2 border rounded focus:ring-1 focus:outline-none"
+                            />
+                        </div>
                         <div className="flex justify-end">
                             <button onClick={handleSaveTemplates} className="px-4 py-1.5 bg-indigo-100 text-indigo-700 text-sm font-bold rounded hover:bg-indigo-200 transition">変更を保存</button>
                         </div>
@@ -248,7 +261,7 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
             {/* Preview Modal */}
             {showPreview && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl flex flex-col max-h-[90vh]">
+                    <div className="bg-white rounded-lg shadow-xl w-[90vw] max-w-4xl flex flex-col h-[85vh]">
                         <div className="flex justify-between items-center p-4 border-b">
                             <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
                                 <Copy size={20} className="text-indigo-600" /> テキスト出力プレビュー

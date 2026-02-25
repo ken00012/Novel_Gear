@@ -137,6 +137,7 @@ export interface BoardThread {
     title: string;
     thread_template: string;
     post_template: string;
+    start_index: number;
     created_at: string;
     posts?: BoardPost[];
 }

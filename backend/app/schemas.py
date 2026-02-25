@@ -274,6 +274,7 @@ class BoardThreadBase(BaseModel):
     title: str
     thread_template: str = "1: 名無しさん : {{date}} ID:{{id}}\n{{title}}\n"
     post_template: str = "{{number}}: {{name}} ID:{{id}}\n{{content}}\n"
+    start_index: int = 1
 
 class BoardThreadCreate(BoardThreadBase):
     pass
