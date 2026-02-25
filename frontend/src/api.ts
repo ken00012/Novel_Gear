@@ -14,6 +14,22 @@ export interface StatusAttribute {
     is_active: boolean;
 }
 
+export interface Tag {
+    id: number;
+    attribute_id: number;
+    name: string;
+    color?: string | null;
+}
+
+export interface CharacterProfileAttribute {
+    id: number;
+    key: string;
+    name: string;
+    type: 'text' | 'tag';
+    order_index: number;
+    tags: Tag[];
+}
+
 export interface CustomAttribute {
     id: number;
     character_id: number;
@@ -25,12 +41,7 @@ export interface CustomAttribute {
 export interface Character {
     id: number;
     name: string;
-    age?: string;
-    gender?: string;
-    faction?: string;
-    appearance?: string;
-    personality?: string;
-    memo?: string;
+    profile_data: Record<string, any>;
     visibility_settings: Record<string, boolean>;
     attributes: CustomAttribute[];
     is_status_enabled: boolean;

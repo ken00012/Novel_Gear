@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { api, type Character, type CustomAttribute, type Job, type Skill, type Equipment, type Event, type CharacterState } from '../../api';
 import { ArrowLeft, Plus, Trash2, Copy, User, Swords, X, Loader2, Check } from 'lucide-react';
 import StatusEditorPane from './components/StatusEditorPane';
+import { useProfileAttributes } from '../../contexts/ProfileContext';
 
 const STAT_LABELS: Record<string, string> = {
     hp: 'HP', mp: 'MP', str: '筋力', mag: '魔力', spd: '敏捷', luk: '運'
@@ -10,6 +11,7 @@ const STAT_LABELS: Record<string, string> = {
 const STAT_KEYS = Object.keys(STAT_LABELS);
 
 export default function CharacterDetailView() {
+    const { profileAttributes } = useProfileAttributes();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
 
@@ -79,17 +81,20 @@ export default function CharacterDetailView() {
         setCharacter({ ...character, [key]: value });
     };
 
+    const handleUpdateProfileData = (key: string, value: any) => {
+        if (!character) return;
+        setCharacter({
+            ...character,
+            profile_data: { ...(character.profile_data || {}), [key]: value }
+        });
+    };
+
     const handleSaveCharacter = useCallback(async (charToSave: Character) => {
         setSaveStatus('saving');
         try {
             await api.put(`/characters/${id}`, {
                 name: charToSave.name,
-                age: charToSave.age,
-                gender: charToSave.gender,
-                faction: charToSave.faction,
-                appearance: charToSave.appearance,
-                personality: charToSave.personality,
-                memo: charToSave.memo,
+                profile_data: charToSave.profile_data || {},
                 visibility_settings: charToSave.visibility_settings as Record<string, any>,
                 is_status_enabled: charToSave.is_status_enabled,
                 job_id: charToSave.job_id,
@@ -161,21 +166,12 @@ export default function CharacterDetailView() {
         }
     };
 
-    const basicFields = [
-        { key: 'age', label: '年齢' },
-        { key: 'gender', label: '性別' },
-        { key: 'faction', label: '陣営' },
-        { key: 'appearance', label: '外見', type: 'textarea' },
-        { key: 'personality', label: '性格', type: 'textarea' },
-        { key: 'memo', label: 'メモ', type: 'textarea' },
-    ];
-
     const generatePreviewText = () => {
         if (!character) return '';
         let text = `【${character.name}】\n`;
-        basicFields.forEach(field => {
-            const val = (character as any)[field.key];
-            if (val) text += `・${field.label}: ${val}\n`;
+        profileAttributes.forEach(attr => {
+            const val = character.profile_data?.[attr.key];
+            if (val) text += `・${attr.name}: ${val}\n`;
         });
         if (character.attributes.length > 0) {
             text += `\n[追加情報]\n`;
@@ -269,23 +265,28 @@ export default function CharacterDetailView() {
                                         className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-gray-50"
                                     />
                                 </div>
-                                {basicFields.map(field => (
-                                    <div key={field.key} className="relative group">
+                                {profileAttributes.map(attr => (
+                                    <div key={attr.key} className="relative group">
                                         <div className="mb-1">
-                                            <label className="block text-sm font-medium text-gray-700">{field.label}</label>
+                                            <label className="block text-sm font-medium text-gray-700">{attr.name}</label>
                                         </div>
-                                        {field.type === 'textarea' ? (
-                                            <textarea
-                                                value={(character as any)[field.key] || ''}
-                                                onChange={e => handleUpdateBasicInfo(field.key as any, e.target.value)}
-                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[80px]"
-                                            />
+                                        {attr.type === 'tag' ? (
+                                            <select
+                                                value={character.profile_data?.[attr.key] || ''}
+                                                onChange={e => handleUpdateProfileData(attr.key, e.target.value)}
+                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                            >
+                                                <option value="">(未設定)</option>
+                                                {attr.tags?.map(tag => (
+                                                    <option key={tag.id} value={tag.name}>{tag.name}</option>
+                                                ))}
+                                            </select>
                                         ) : (
-                                            <input
-                                                type="text"
-                                                value={(character as any)[field.key] || ''}
-                                                onChange={e => handleUpdateBasicInfo(field.key as any, e.target.value)}
-                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                                            <textarea
+                                                value={character.profile_data?.[attr.key] || ''}
+                                                onChange={e => handleUpdateProfileData(attr.key, e.target.value)}
+                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 min-h-[40px]"
+                                                rows={1}
                                             />
                                         )}
                                     </div>

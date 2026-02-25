@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
+import uuid
 
 from . import models, schemas
 from .database import engine, get_db
@@ -111,6 +112,72 @@ def update_attribute(attribute_id: int, attribute: schemas.CustomAttributeCreate
     db.commit()
     db.refresh(db_attr)
     return db_attr
+
+# --- Character Profile Attributes (Dynamic Profiles) ---
+@app.get("/api/profile_attributes/", response_model=List[schemas.CharacterProfileAttribute])
+def read_profile_attributes(db: Session = Depends(get_db)):
+    return db.query(models.CharacterProfileAttribute).order_by(models.CharacterProfileAttribute.order_index).all()
+
+@app.post("/api/profile_attributes/", response_model=schemas.CharacterProfileAttribute)
+def create_profile_attribute(attr: schemas.CharacterProfileAttributeCreate, db: Session = Depends(get_db)):
+    new_key = "attr_" + str(uuid.uuid4())[:8]
+    db_attr = models.CharacterProfileAttribute(**attr.model_dump(), key=new_key)
+    db.add(db_attr)
+    db.commit()
+    db.refresh(db_attr)
+    return db_attr
+
+@app.put("/api/profile_attributes/{attribute_id}", response_model=schemas.CharacterProfileAttribute)
+def update_profile_attribute(attribute_id: int, attr: schemas.CharacterProfileAttributeCreate, db: Session = Depends(get_db)):
+    db_attr = db.query(models.CharacterProfileAttribute).filter(models.CharacterProfileAttribute.id == attribute_id).first()
+    if not db_attr:
+        raise HTTPException(status_code=404, detail="Profile Attribute not found")
+    for var, value in attr.model_dump().items():
+        setattr(db_attr, var, value)
+    db.commit()
+    db.refresh(db_attr)
+    return db_attr
+
+@app.delete("/api/profile_attributes/{attribute_id}")
+def delete_profile_attribute(attribute_id: int, db: Session = Depends(get_db)):
+    db_attr = db.query(models.CharacterProfileAttribute).filter(models.CharacterProfileAttribute.id == attribute_id).first()
+    if not db_attr:
+        raise HTTPException(status_code=404, detail="Profile Attribute not found")
+    db.delete(db_attr)
+    db.commit()
+    return {"ok": True}
+
+# --- Tags ---
+@app.post("/api/profile_attributes/{attribute_id}/tags/", response_model=schemas.Tag)
+def create_tag(attribute_id: int, tag: schemas.TagCreate, db: Session = Depends(get_db)):
+    db_attr = db.query(models.CharacterProfileAttribute).filter(models.CharacterProfileAttribute.id == attribute_id).first()
+    if not db_attr:
+        raise HTTPException(status_code=404, detail="Profile Attribute not found")
+    db_tag = models.Tag(**tag.model_dump(), attribute_id=attribute_id)
+    db.add(db_tag)
+    db.commit()
+    db.refresh(db_tag)
+    return db_tag
+
+@app.put("/api/tags/{tag_id}", response_model=schemas.Tag)
+def update_tag(tag_id: int, tag: schemas.TagCreate, db: Session = Depends(get_db)):
+    db_tag = db.query(models.Tag).filter(models.Tag.id == tag_id).first()
+    if not db_tag:
+        raise HTTPException(status_code=404, detail="Tag not found")
+    for var, value in tag.model_dump().items():
+        setattr(db_tag, var, value)
+    db.commit()
+    db.refresh(db_tag)
+    return db_tag
+
+@app.delete("/api/tags/{tag_id}")
+def delete_tag(tag_id: int, db: Session = Depends(get_db)):
+    db_tag = db.query(models.Tag).filter(models.Tag.id == tag_id).first()
+    if not db_tag:
+        raise HTTPException(status_code=404, detail="Tag not found")
+    db.delete(db_tag)
+    db.commit()
+    return {"ok": True}
 
 # --- Status Attributes (Dynamic Settings) ---
 @app.get("/api/status_attributes/", response_model=List[schemas.StatusAttribute])

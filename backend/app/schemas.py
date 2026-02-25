@@ -1,6 +1,37 @@
 from pydantic import BaseModel
 from typing import Optional, Dict, Any, List
 
+# --- Character Profile Attributes (Dynamic Profiles) ---
+class TagBase(BaseModel):
+    name: str
+    color: Optional[str] = None
+
+class TagCreate(TagBase):
+    pass
+
+class Tag(TagBase):
+    id: int
+    attribute_id: int
+
+    class Config:
+        from_attributes = True
+
+class CharacterProfileAttributeBase(BaseModel):
+    name: str
+    type: str = "text" # "text" or "tag"
+    order_index: int = 0
+
+class CharacterProfileAttributeCreate(CharacterProfileAttributeBase):
+    pass
+
+class CharacterProfileAttribute(CharacterProfileAttributeBase):
+    id: int
+    key: str
+    tags: List[Tag] = []
+
+    class Config:
+        from_attributes = True
+
 # Custom Attribute
 class CustomAttributeBase(BaseModel):
     attribute_name: str
@@ -98,6 +129,7 @@ class CharacterBase(BaseModel):
     appearance: Optional[str] = None
     personality: Optional[str] = None
     memo: Optional[str] = None
+    profile_data: Dict[str, Any] = {}
     visibility_settings: Dict[str, Any] = {}
     is_status_enabled: bool = True
     job_id: Optional[int] = None

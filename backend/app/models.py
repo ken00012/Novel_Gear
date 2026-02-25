@@ -16,11 +16,13 @@ class Character(Base):
     
     # JSON to store visibility flags: e.g. {"age": True, "gender": False}
     visibility_settings = Column(JSON, default={})
-
     is_status_enabled = Column(Boolean, default=True)
     job_id = Column(Integer, ForeignKey("jobs.id"), nullable=True)
     level = Column(Integer, default=1)
     talent_bonuses = Column(JSON, default={})
+    
+    # 動的カスタマイズ用プロフィールデータ
+    profile_data = Column(JSON, default={})
 
     attributes = relationship("CustomAttribute", back_populates="character", cascade="all, delete-orphan")
     states = relationship("CharacterState", back_populates="character", cascade="all, delete-orphan")
@@ -40,6 +42,29 @@ class CustomAttribute(Base):
     is_public = Column(Boolean, default=False)
 
     character = relationship("Character", back_populates="attributes")
+
+
+class CharacterProfileAttribute(Base):
+    __tablename__ = "character_profile_attributes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String(50), unique=True, index=True)
+    name = Column(String(100))
+    type = Column(String(20), default="text") # 'text' or 'tag'
+    order_index = Column(Integer, default=0, index=True)
+
+    tags = relationship("Tag", back_populates="attribute", cascade="all, delete-orphan")
+
+
+class Tag(Base):
+    __tablename__ = "tags"
+
+    id = Column(Integer, primary_key=True, index=True)
+    attribute_id = Column(Integer, ForeignKey("character_profile_attributes.id"))
+    name = Column(String(100))
+    color = Column(String(20), nullable=True)
+
+    attribute = relationship("CharacterProfileAttribute", back_populates="tags")
 
 
 class Event(Base):

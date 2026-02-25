@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, type Character } from '../../api';
 import { UserPlus, Settings, Trash2 } from 'lucide-react';
+import { useProfileAttributes } from '../../contexts/ProfileContext';
 
 export default function CharacterList() {
+    const { profileAttributes } = useProfileAttributes();
     const navigate = useNavigate();
     const [characters, setCharacters] = useState<Character[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -25,7 +27,7 @@ export default function CharacterList() {
     const handleAddCharacter = async () => {
         if (!newCharName.trim()) return;
         try {
-            await api.post('/characters/', { name: newCharName, visibility_settings: {} });
+            await api.post('/characters/', { name: newCharName, visibility_settings: {}, profile_data: {} });
             setNewCharName('');
             setIsModalOpen(false);
             fetchCharacters();
@@ -67,7 +69,9 @@ export default function CharacterList() {
                         <div className="flex items-start justify-between">
                             <div>
                                 <h3 className="font-bold text-lg text-gray-900 group-hover:text-indigo-600 transition">{char.name}</h3>
-                                <p className="text-sm text-gray-500 mt-1">{char.faction || '陣営未設定'}</p>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    {char.profile_data?.[profileAttributes.find(a => a.name === '陣営')?.key || ''] || '陣営未設定'}
+                                </p>
                             </div>
                             <div className="flex flex-col items-end gap-2">
                                 <div className="h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold">

@@ -5,11 +5,13 @@ import SkillTab from './SkillTab';
 import EquipmentTab from './EquipmentTab';
 import GlossaryTab from './GlossaryTab';
 import StatusAttributeTab from './StatusAttributeTab';
+import ProfileAttributeTab from './ProfileAttributeTab';
 
 export default function LibraryDashboard() {
-    const [activeTab, setActiveTab] = useState<'status' | 'jobs' | 'skills' | 'equipments' | 'glossary'>('status');
+    const [activeTab, setActiveTab] = useState<'profile' | 'status' | 'jobs' | 'skills' | 'equipments' | 'glossary'>('profile');
 
     const tabs = [
+        { id: 'profile', label: 'プロフィール項目', icon: Settings2 },
         { id: 'status', label: 'ステータス項目', icon: Settings2 },
         { id: 'jobs', label: 'ジョブ', icon: Briefcase },
         { id: 'skills', label: 'スキル', icon: Zap },
@@ -49,6 +51,7 @@ export default function LibraryDashboard() {
 
             {/* Tab Content */}
             <div className="flex-1 overflow-auto p-6 bg-gray-50/50">
+                {activeTab === 'profile' && <ProfileAttributeTab />}
                 {activeTab === 'status' && <StatusAttributeTab />}
                 {activeTab === 'jobs' && <JobTab />}
                 {activeTab === 'skills' && <SkillTab />}
