@@ -113,7 +113,17 @@ def update_attribute(attribute_id: int, attribute: schemas.CustomAttributeCreate
     db.refresh(db_attr)
     return db_attr
 
-# --- Character Profile Attributes (Dynamic Profiles) ---
+@app.put("/api/profile_attributes/reorder")
+def reorder_profile_attributes(updates: List[schemas.OrderUpdate], db: Session = Depends(get_db)):
+    for update in updates:
+        db.execute(
+            models.CharacterProfileAttribute.__table__.update()
+            .where(models.CharacterProfileAttribute.id == update.id)
+            .values(order_index=update.order_index)
+        )
+    db.commit()
+    return {"ok": True}
+
 @app.get("/api/profile_attributes/", response_model=List[schemas.CharacterProfileAttribute])
 def read_profile_attributes(db: Session = Depends(get_db)):
     return db.query(models.CharacterProfileAttribute).order_by(models.CharacterProfileAttribute.order_index).all()
@@ -184,9 +194,21 @@ def delete_tag(tag_id: int, db: Session = Depends(get_db)):
 def read_status_attributes(db: Session = Depends(get_db)):
     return db.query(models.StatusAttribute).order_by(models.StatusAttribute.order_index).all()
 
+@app.put("/api/status_attributes/reorder")
+def reorder_status_attributes(updates: List[schemas.OrderUpdate], db: Session = Depends(get_db)):
+    for update in updates:
+        db.execute(
+            models.StatusAttribute.__table__.update()
+            .where(models.StatusAttribute.id == update.id)
+            .values(order_index=update.order_index)
+        )
+    db.commit()
+    return {"ok": True}
+
 @app.post("/api/status_attributes/", response_model=schemas.StatusAttribute)
 def create_status_attribute(attr: schemas.StatusAttributeCreate, db: Session = Depends(get_db)):
-    db_attr = models.StatusAttribute(**attr.model_dump())
+    new_key = "stat_" + str(uuid.uuid4())[:8]
+    db_attr = models.StatusAttribute(**attr.model_dump(), key=new_key)
     db.add(db_attr)
     db.commit()
     db.refresh(db_attr)

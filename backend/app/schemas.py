@@ -50,7 +50,6 @@ class CustomAttribute(CustomAttributeBase):
 
 # Status Attribute (Dynamic Settings)
 class StatusAttributeBase(BaseModel):
-    key: str
     name: str
     description: Optional[str] = None
     order_index: int = 0
@@ -61,9 +60,15 @@ class StatusAttributeCreate(StatusAttributeBase):
 
 class StatusAttribute(StatusAttributeBase):
     id: int
+    key: str
 
     class Config:
         from_attributes = True
+
+# Reorder API
+class OrderUpdate(BaseModel):
+    id: int
+    order_index: int
 
 # Character State
 class CharacterStateBase(BaseModel):
