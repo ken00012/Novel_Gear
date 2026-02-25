@@ -101,6 +101,7 @@ export default function StatusDashboardView() {
                     mag_base: 0, mag_mod: 0,
                     spd_base: 0, spd_mod: 0,
                     luk_base: 0, luk_mod: 0,
+                    base_stats: {}, mod_stats: {},
                     visibility_settings: {},
                     memo: ''
                 });

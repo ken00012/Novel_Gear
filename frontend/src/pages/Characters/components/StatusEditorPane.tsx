@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { api, type Character, type CharacterState, type Job, type Skill, type Equipment, type Event } from '../../../api';
 import { Plus, X, Loader2, Check, Copy } from 'lucide-react';
+import { useStatusAttributes } from '../../../contexts/StatusContext';
 
 interface Props {
     character: Character;
@@ -20,6 +21,7 @@ export default function StatusEditorPane({
     availableEquipments,
     onStateChange
 }: Omit<Props, 'eventList'>) {
+    const { statusAttributes } = useStatusAttributes();
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
 
     // Local state for editing. Initialized from either currentState or global character.
@@ -151,31 +153,43 @@ export default function StatusEditorPane({
 
     // Calculate Dynamic Stats
     const computedStats = useMemo(() => {
-        const baseVals = { hp: 0, mp: 0, str: 0, mag: 0, spd: 0, luk: 0 };
-        const flatMods = { hp: 0, mp: 0, str: 0, mag: 0, spd: 0, luk: 0 };
-        const pctMods = { hp: 0, mp: 0, str: 0, mag: 0, spd: 0, luk: 0 };
+        const baseVals: Record<string, number> = {};
+        const flatMods: Record<string, number> = {};
+        const pctMods: Record<string, number> = {};
+
+        statusAttributes.forEach(attr => {
+            baseVals[attr.key] = 0;
+            flatMods[attr.key] = 0;
+            pctMods[attr.key] = 0;
+        });
 
         // 1. Job Bases & Growths
         const job = availableJobs.find(j => j.id === localJobId);
         if (job) {
-            ['hp', 'mp', 'str', 'mag', 'spd', 'luk'].forEach(attr => {
-                const b = job.base_stats[attr] || 0;
-                const g = job.stat_growth[attr] || 0;
-                baseVals[attr as keyof typeof baseVals] += b + (g * (localLevel - 1));
+            statusAttributes.forEach(attr => {
+                const b = job.base_stats[attr.key] || 0;
+                const g = job.stat_growth[attr.key] || 0;
+                baseVals[attr.key] += b + (g * ((localLevel || 1) - 1));
             });
         }
 
         // 2. Talent Bonuses
-        ['hp', 'mp', 'str', 'mag', 'spd', 'luk'].forEach(attr => {
-            baseVals[attr as keyof typeof baseVals] += (character.talent_bonuses[attr] || 0);
+        statusAttributes.forEach(attr => {
+            baseVals[attr.key] += (character.talent_bonuses[attr.key] || 0);
         });
 
         // 3. User SP points from currentState
         if (currentState) {
-            ['hp', 'mp', 'str', 'mag', 'spd', 'luk'].forEach(attr => {
-                const baseKey = `${attr}_base` as keyof CharacterState;
-                const sp = (currentState[baseKey] as number) || 0;
-                baseVals[attr as keyof typeof baseVals] += sp;
+            statusAttributes.forEach(attr => {
+                // Read from dynamic JSON first, fallback to legacy columns
+                const stateBaseStats = currentState.base_stats || {};
+                const dynamicSp = stateBaseStats[attr.key];
+                if (dynamicSp !== undefined) {
+                    baseVals[attr.key] += dynamicSp;
+                } else {
+                    const legacyKey = `${attr.key}_base` as keyof CharacterState;
+                    baseVals[attr.key] += (currentState[legacyKey] as number) || 0;
+                }
             });
         }
 
@@ -183,36 +197,37 @@ export default function StatusEditorPane({
         const allItems = [...activeSkills, ...activeEquipments];
         allItems.forEach(item => {
             (item.modifiers || []).forEach((mod: any) => {
-                const attr = mod.attribute as keyof typeof flatMods;
-                if (!flatMods[attr] && flatMods[attr] !== 0) return;
+                const k = mod.attribute;
+                if (flatMods[k] === undefined) return; // not tracking this stat
 
-                if (mod.type === 'flat') flatMods[attr] += mod.value;
-                if (mod.type === 'percent') pctMods[attr] += mod.value;
+                if (mod.type === 'flat') flatMods[k] += mod.value;
+                if (mod.type === 'percent') pctMods[k] += mod.value;
             });
         });
 
         if (currentState) {
-            ['hp', 'mp', 'str', 'mag', 'spd', 'luk'].forEach(attr => {
-                const modKey = `${attr}_mod` as keyof CharacterState;
-                flatMods[attr as keyof typeof flatMods] += (currentState[modKey] as number) || 0;
+            statusAttributes.forEach(attr => {
+                const stateModStats = currentState.mod_stats || {};
+                const dynamicMod = stateModStats[attr.key];
+                if (dynamicMod !== undefined) {
+                    flatMods[attr.key] += dynamicMod;
+                } else {
+                    const legacyModKey = `${attr.key}_mod` as keyof CharacterState;
+                    flatMods[attr.key] += (currentState[legacyModKey] as number) || 0;
+                }
             });
         }
 
-        const finalStats = { hp: 0, mp: 0, str: 0, mag: 0, spd: 0, luk: 0 };
-        ['hp', 'mp', 'str', 'mag', 'spd', 'luk'].forEach(attr => {
-            const k = attr as keyof typeof finalStats;
-            finalStats[k] = Math.floor(baseVals[k] * (1 + pctMods[k] / 100)) + flatMods[k];
+        const finalStats: Record<string, number> = {};
+        statusAttributes.forEach(attr => {
+            finalStats[attr.key] = Math.floor(baseVals[attr.key] * (1 + pctMods[attr.key] / 100)) + flatMods[attr.key];
         });
 
         return { finalStats, baseVals, pctMods, flatMods };
-    }, [localJobId, localLevel, character, currentState, availableJobs, activeSkills, activeEquipments]);
+    }, [statusAttributes, localJobId, localLevel, character, currentState, availableJobs, activeSkills, activeEquipments]);
 
-
-    const statFields = [
-        { key: 'hp', label: 'HP' }, { key: 'mp', label: 'MP' },
-        { key: 'str', label: '筋力' }, { key: 'mag', label: '魔力' },
-        { key: 'spd', label: '速さ' }, { key: 'luk', label: '運' },
-    ];
+    // statFields are now derived dynamically
+    const statFields = statusAttributes.map(attr => ({ key: attr.key, label: attr.name }));
 
     return (
         <div className="space-y-8">
@@ -403,17 +418,22 @@ export default function StatusEditorPane({
                         <h5 className="text-sm font-bold text-gray-700 mb-3">イベント固有のステータス加減算 (バフ/デバフ/SP割り振り)</h5>
                         <div className="grid grid-cols-2 gap-4">
                             {statFields.map(stat => {
-                                const baseKey = `${stat.key}_base` as keyof CharacterState;
-                                const modKey = `${stat.key}_mod` as keyof CharacterState;
+                                const currentBaseStats = currentState.base_stats || {};
+                                const currentModStats = currentState.mod_stats || {};
+
+                                const baseVal = currentBaseStats[stat.key] !== undefined ? currentBaseStats[stat.key] : (currentState[`${stat.key}_base` as keyof CharacterState] as number || 0);
+                                const modVal = currentModStats[stat.key] !== undefined ? currentModStats[stat.key] : (currentState[`${stat.key}_mod` as keyof CharacterState] as number || 0);
                                 return (
                                     <div key={`state_${stat.key}`} className="flex gap-2">
                                         <div className="flex-1">
                                             <label className="block text-xs text-gray-500 mb-1">{stat.label} 基礎SP</label>
                                             <input
                                                 type="number"
-                                                value={(currentState[baseKey] as number) || 0}
+                                                value={baseVal}
                                                 onChange={e => {
-                                                    api.post(`/characters/${character.id}/states/`, { ...currentState, [baseKey]: parseInt(e.target.value) || 0 }).then(() => onStateChange());
+                                                    const val = parseInt(e.target.value) || 0;
+                                                    const updatedBaseStats = { ...currentBaseStats, [stat.key]: val };
+                                                    api.post(`/characters/${character.id}/states/`, { ...currentState, base_stats: updatedBaseStats }).then(() => onStateChange());
                                                 }}
                                                 className="w-full px-2 py-1 text-sm border rounded focus:ring-1 focus:ring-indigo-500 outline-none"
                                             />
@@ -422,9 +442,11 @@ export default function StatusEditorPane({
                                             <label className="block text-xs text-gray-500 mb-1">{stat.label} 特殊固定補正</label>
                                             <input
                                                 type="number"
-                                                value={(currentState[modKey] as number) || 0}
+                                                value={modVal}
                                                 onChange={e => {
-                                                    api.post(`/characters/${character.id}/states/`, { ...currentState, [modKey]: parseInt(e.target.value) || 0 }).then(() => onStateChange());
+                                                    const val = parseInt(e.target.value) || 0;
+                                                    const updatedModStats = { ...currentModStats, [stat.key]: val };
+                                                    api.post(`/characters/${character.id}/states/`, { ...currentState, mod_stats: updatedModStats }).then(() => onStateChange());
                                                 }}
                                                 className="w-full px-2 py-1 text-sm border rounded focus:ring-1 focus:ring-indigo-500 outline-none"
                                             />

@@ -69,6 +69,8 @@ export interface CharacterState {
     spd_mod: number;
     luk_base: number;
     luk_mod: number;
+    base_stats: Record<string, number>;
+    mod_stats: Record<string, number>;
     visibility_settings: Record<string, boolean>;
     memo?: string;
 }

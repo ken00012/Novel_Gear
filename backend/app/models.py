@@ -74,6 +74,9 @@ class CharacterState(Base):
     luk_base = Column(Integer, default=0)
     luk_mod = Column(Integer, default=0)
 
+    base_stats = Column(JSON, default={})
+    mod_stats = Column(JSON, default={})
+
     # visibility for stats
     visibility_settings = Column(JSON, default={})
 

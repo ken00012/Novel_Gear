@@ -1,25 +1,18 @@
 import { useState, useEffect } from 'react';
 import { api, type Job } from '../../api';
 import { Plus, Edit2, Trash2, X } from 'lucide-react';
-
-const STAT_LABELS: Record<string, string> = {
-    hp: 'HP', mp: 'MP', str: '筋力', mag: '魔力', spd: '敏捷', luk: '運'
-};
-const STAT_KEYS = Object.keys(STAT_LABELS);
+import { useStatusAttributes } from '../../contexts/StatusContext';
 
 export default function JobTab() {
+    const { statusAttributes } = useStatusAttributes();
     const [jobs, setJobs] = useState<Job[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<Job | null>(null);
 
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [baseStats, setBaseStats] = useState<Record<string, number>>(
-        STAT_KEYS.reduce((acc, key) => ({ ...acc, [key]: 0 }), {})
-    );
-    const [statGrowth, setStatGrowth] = useState<Record<string, number>>(
-        STAT_KEYS.reduce((acc, key) => ({ ...acc, [key]: 0 }), {})
-    );
+    const [baseStats, setBaseStats] = useState<Record<string, number>>({});
+    const [statGrowth, setStatGrowth] = useState<Record<string, number>>({});
 
     const fetchJobs = async () => {
         try {
@@ -35,18 +28,19 @@ export default function JobTab() {
     }, []);
 
     const openModal = (item?: Job) => {
+        const defaultStats = statusAttributes.reduce((acc, attr) => ({ ...acc, [attr.key]: 0 }), {});
         if (item) {
             setEditingItem(item);
             setName(item.name);
             setDescription(item.description || '');
-            setBaseStats(item.base_stats || STAT_KEYS.reduce((acc, key) => ({ ...acc, [key]: 0 }), {}));
-            setStatGrowth(item.stat_growth || STAT_KEYS.reduce((acc, key) => ({ ...acc, [key]: 0 }), {}));
+            setBaseStats({ ...defaultStats, ...(item.base_stats || {}) });
+            setStatGrowth({ ...defaultStats, ...(item.stat_growth || {}) });
         } else {
             setEditingItem(null);
             setName('');
             setDescription('');
-            setBaseStats(STAT_KEYS.reduce((acc, key) => ({ ...acc, [key]: 0 }), {}));
-            setStatGrowth(STAT_KEYS.reduce((acc, key) => ({ ...acc, [key]: 0 }), {}));
+            setBaseStats(defaultStats);
+            setStatGrowth(defaultStats);
         }
         setIsModalOpen(true);
     };
@@ -124,10 +118,10 @@ export default function JobTab() {
                                 <div>
                                     <span className="text-xs font-bold text-gray-500 uppercase">Lv1 基礎値</span>
                                     <div className="grid grid-cols-3 gap-1 mt-1">
-                                        {STAT_KEYS.map(k => (
-                                            <div key={k} className="text-xs text-gray-700 bg-white p-1 rounded border border-gray-100 flex justify-between">
-                                                <span className="text-gray-400">{STAT_LABELS[k]}</span>
-                                                <span className="font-mono">{job.base_stats?.[k] || 0}</span>
+                                        {statusAttributes.map(attr => (
+                                            <div key={attr.key} className="text-xs text-gray-700 bg-white p-1 rounded border border-gray-100 flex justify-between">
+                                                <span className="text-gray-400">{attr.name}</span>
+                                                <span className="font-mono">{job.base_stats?.[attr.key] || 0}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -135,10 +129,10 @@ export default function JobTab() {
                                 <div>
                                     <span className="text-xs font-bold text-gray-500 uppercase">LvUP 成長値</span>
                                     <div className="grid grid-cols-3 gap-1 mt-1">
-                                        {STAT_KEYS.map(k => (
-                                            <div key={k} className="text-xs text-gray-700 bg-white p-1 rounded border border-gray-100 flex justify-between">
-                                                <span className="text-gray-400">{STAT_LABELS[k]}</span>
-                                                <span className="font-mono">+{job.stat_growth?.[k] || 0}</span>
+                                        {statusAttributes.map(attr => (
+                                            <div key={attr.key} className="text-xs text-gray-700 bg-white p-1 rounded border border-gray-100 flex justify-between">
+                                                <span className="text-gray-400">{attr.name}</span>
+                                                <span className="font-mono">+{job.stat_growth?.[attr.key] || 0}</span>
                                             </div>
                                         ))}
                                     </div>
@@ -188,13 +182,13 @@ export default function JobTab() {
                             <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
                                 <h4 className="font-medium text-gray-800 mb-3 text-sm">Lv1 基礎パラメータ</h4>
                                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-                                    {STAT_KEYS.map(k => (
-                                        <div key={`base-${k}`}>
-                                            <label className="block text-xs text-gray-500 mb-1">{STAT_LABELS[k]}</label>
+                                    {statusAttributes.map(attr => (
+                                        <div key={`base-${attr.key}`}>
+                                            <label className="block text-xs text-gray-500 mb-1" title={attr.description || ''}>{attr.name}</label>
                                             <input
                                                 type="number"
-                                                value={baseStats[k]}
-                                                onChange={e => handleStatChange('base', k, e.target.value)}
+                                                value={baseStats[attr.key] ?? 0}
+                                                onChange={e => handleStatChange('base', attr.key, e.target.value)}
                                                 className="w-full border border-gray-300 rounded px-2 py-1 text-sm outline-none focus:border-indigo-400 font-mono"
                                             />
                                         </div>
@@ -205,13 +199,13 @@ export default function JobTab() {
                             <div className="bg-gray-50 rounded-lg p-4 border border-gray-100">
                                 <h4 className="font-medium text-gray-800 mb-3 text-sm">レベルアップごとの成長値</h4>
                                 <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-                                    {STAT_KEYS.map(k => (
-                                        <div key={`growth-${k}`}>
-                                            <label className="block text-xs text-gray-500 mb-1">{STAT_LABELS[k]}</label>
+                                    {statusAttributes.map(attr => (
+                                        <div key={`growth-${attr.key}`}>
+                                            <label className="block text-xs text-gray-500 mb-1" title={attr.description || ''}>{attr.name}</label>
                                             <input
                                                 type="number"
-                                                value={statGrowth[k]}
-                                                onChange={e => handleStatChange('growth', k, e.target.value)}
+                                                value={statGrowth[attr.key] ?? 0}
+                                                onChange={e => handleStatChange('growth', attr.key, e.target.value)}
                                                 className="w-full border border-gray-300 rounded px-2 py-1 text-sm outline-none focus:border-green-400 font-mono"
                                             />
                                         </div>

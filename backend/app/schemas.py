@@ -48,6 +48,8 @@ class CharacterStateBase(BaseModel):
     spd_mod: int = 0
     luk_base: int = 0
     luk_mod: int = 0
+    base_stats: Dict[str, Any] = {}
+    mod_stats: Dict[str, Any] = {}
     visibility_settings: Dict[str, Any] = {}
     memo: Optional[str] = None
     job_id: Optional[int] = None

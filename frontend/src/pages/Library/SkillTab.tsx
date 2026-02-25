@@ -1,13 +1,10 @@
 import { useState, useEffect } from 'react';
 import { api, type Skill, type Modifier } from '../../api';
 import { Plus, Edit2, Trash2, X, PlusCircle, MinusCircle } from 'lucide-react';
-
-const STAT_LABELS: Record<string, string> = {
-    hp: 'HP', mp: 'MP', str: '筋力', mag: '魔力', spd: '敏捷', luk: '運'
-};
-const STAT_KEYS = Object.keys(STAT_LABELS);
+import { useStatusAttributes } from '../../contexts/StatusContext';
 
 export default function SkillTab() {
+    const { statusAttributes } = useStatusAttributes();
     const [skills, setSkills] = useState<Skill[]>([]);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingItem, setEditingItem] = useState<Skill | null>(null);
@@ -91,7 +88,8 @@ export default function SkillTab() {
     const formatModifierLabel = (mod: Modifier) => {
         const sign = mod.value >= 0 ? '+' : '';
         const unit = mod.type === 'percent' ? '%' : '';
-        return `${STAT_LABELS[mod.attribute] || mod.attribute} ${sign}${mod.value}${unit}`;
+        const attrName = statusAttributes.find(a => a.key === mod.attribute)?.name || mod.attribute;
+        return `${attrName} ${sign}${mod.value}${unit}`;
     };
 
     return (
@@ -204,8 +202,8 @@ export default function SkillTab() {
                                                     onChange={e => updateModifier(index, 'attribute', e.target.value)}
                                                     className="border border-gray-300 rounded px-2 py-1 text-sm outline-none"
                                                 >
-                                                    {STAT_KEYS.map(k => (
-                                                        <option key={k} value={k}>{STAT_LABELS[k]}</option>
+                                                    {statusAttributes.map(attr => (
+                                                        <option key={attr.key} value={attr.key}>{attr.name}</option>
                                                     ))}
                                                 </select>
                                                 <select
