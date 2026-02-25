@@ -5,6 +5,15 @@ export const api = axios.create({
 });
 
 // Types
+export interface StatusAttribute {
+    id: number;
+    key: string;
+    name: string;
+    description?: string | null;
+    order_index: number;
+    is_active: boolean;
+}
+
 export interface CustomAttribute {
     id: number;
     character_id: number;

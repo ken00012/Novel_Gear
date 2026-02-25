@@ -163,6 +163,17 @@ class Plot(Base):
 
     event = relationship("Event", backref="plots")
 
+# --- Status Attributes ---
+class StatusAttribute(Base):
+    __tablename__ = "status_attributes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String(50), unique=True, index=True)
+    name = Column(String(50))
+    description = Column(Text, nullable=True)
+    order_index = Column(Integer, default=0, index=True)
+    is_active = Column(Boolean, default=True, index=True)
+
 # --- Board Simulator ---
 from datetime import datetime
 

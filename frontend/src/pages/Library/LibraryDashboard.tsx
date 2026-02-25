@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import { Briefcase, Zap, Shield, BookOpen } from 'lucide-react';
+import { Briefcase, Zap, Shield, BookOpen, Settings2 } from 'lucide-react';
 import JobTab from './JobTab';
 import SkillTab from './SkillTab';
 import EquipmentTab from './EquipmentTab';
 import GlossaryTab from './GlossaryTab';
+import StatusAttributeTab from './StatusAttributeTab';
 
 export default function LibraryDashboard() {
-    const [activeTab, setActiveTab] = useState<'jobs' | 'skills' | 'equipments' | 'glossary'>('jobs');
+    const [activeTab, setActiveTab] = useState<'status' | 'jobs' | 'skills' | 'equipments' | 'glossary'>('status');
 
     const tabs = [
+        { id: 'status', label: 'ステータス項目', icon: Settings2 },
         { id: 'jobs', label: 'ジョブ', icon: Briefcase },
         { id: 'skills', label: 'スキル', icon: Zap },
         { id: 'equipments', label: '装備品', icon: Shield },
@@ -33,8 +35,8 @@ export default function LibraryDashboard() {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`flex items-center gap-2 pb-3 px-1 border-b-2 font-medium text-sm transition-colors ${isActive
-                                        ? 'border-indigo-500 text-indigo-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    ? 'border-indigo-500 text-indigo-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                     }`}
                             >
                                 <Icon size={18} />
@@ -47,6 +49,7 @@ export default function LibraryDashboard() {
 
             {/* Tab Content */}
             <div className="flex-1 overflow-auto p-6 bg-gray-50/50">
+                {activeTab === 'status' && <StatusAttributeTab />}
                 {activeTab === 'jobs' && <JobTab />}
                 {activeTab === 'skills' && <SkillTab />}
                 {activeTab === 'equipments' && <EquipmentTab />}

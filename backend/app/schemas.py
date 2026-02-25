@@ -17,6 +17,23 @@ class CustomAttribute(CustomAttributeBase):
     class Config:
         from_attributes = True
 
+# Status Attribute (Dynamic Settings)
+class StatusAttributeBase(BaseModel):
+    key: str
+    name: str
+    description: Optional[str] = None
+    order_index: int = 0
+    is_active: bool = True
+
+class StatusAttributeCreate(StatusAttributeBase):
+    pass
+
+class StatusAttribute(StatusAttributeBase):
+    id: int
+
+    class Config:
+        from_attributes = True
+
 # Character State
 class CharacterStateBase(BaseModel):
     hp_base: int = 0

@@ -8,6 +8,28 @@ from fastapi.middleware.cors import CORSMiddleware
 
 models.Base.metadata.create_all(bind=engine)
 
+def init_default_status_attributes():
+    db = next(get_db())
+    try:
+        if db.query(models.StatusAttribute).count() == 0:
+            defaults = [
+                {"key": "hp", "name": "HP", "order_index": 1},
+                {"key": "mp", "name": "MP", "order_index": 2},
+                {"key": "str", "name": "筋力", "order_index": 3},
+                {"key": "mag", "name": "魔力", "order_index": 4},
+                {"key": "spd", "name": "速さ", "order_index": 5},
+                {"key": "luk", "name": "運", "order_index": 6},
+            ]
+            for data in defaults:
+                attr = models.StatusAttribute(**data)
+                db.add(attr)
+            db.commit()
+    finally:
+        db.close()
+
+# Initialize default data
+init_default_status_attributes()
+
 app = FastAPI(title="Novel Gear API")
 
 app.add_middleware(
@@ -89,6 +111,39 @@ def update_attribute(attribute_id: int, attribute: schemas.CustomAttributeCreate
     db.commit()
     db.refresh(db_attr)
     return db_attr
+
+# --- Status Attributes (Dynamic Settings) ---
+@app.get("/api/status_attributes/", response_model=List[schemas.StatusAttribute])
+def read_status_attributes(db: Session = Depends(get_db)):
+    return db.query(models.StatusAttribute).order_by(models.StatusAttribute.order_index).all()
+
+@app.post("/api/status_attributes/", response_model=schemas.StatusAttribute)
+def create_status_attribute(attr: schemas.StatusAttributeCreate, db: Session = Depends(get_db)):
+    db_attr = models.StatusAttribute(**attr.model_dump())
+    db.add(db_attr)
+    db.commit()
+    db.refresh(db_attr)
+    return db_attr
+
+@app.put("/api/status_attributes/{attribute_id}", response_model=schemas.StatusAttribute)
+def update_status_attribute(attribute_id: int, attr: schemas.StatusAttributeCreate, db: Session = Depends(get_db)):
+    db_attr = db.query(models.StatusAttribute).filter(models.StatusAttribute.id == attribute_id).first()
+    if not db_attr:
+        raise HTTPException(status_code=404, detail="Status Attribute not found")
+    for var, value in attr.model_dump().items():
+        setattr(db_attr, var, value)
+    db.commit()
+    db.refresh(db_attr)
+    return db_attr
+
+@app.delete("/api/status_attributes/{attribute_id}")
+def delete_status_attribute(attribute_id: int, db: Session = Depends(get_db)):
+    db_attr = db.query(models.StatusAttribute).filter(models.StatusAttribute.id == attribute_id).first()
+    if not db_attr:
+        raise HTTPException(status_code=404, detail="Status Attribute not found")
+    db.delete(db_attr)
+    db.commit()
+    return {"ok": True}
 
 # --- Events ---
 @app.get("/api/events/", response_model=List[schemas.Event])
