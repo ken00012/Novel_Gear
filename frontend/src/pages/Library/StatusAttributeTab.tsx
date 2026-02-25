@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { api, type StatusAttribute } from '../../api';
 import { Plus, Trash2, Edit2, Check, X, GripVertical } from 'lucide-react';
+import { useStatusAttributes } from '../../contexts/StatusContext';
 
 export default function StatusAttributeTab() {
+    const { refresh } = useStatusAttributes();
     const [attributes, setAttributes] = useState<StatusAttribute[]>([]);
     const [isCreating, setIsCreating] = useState(false);
     const [newItem, setNewItem] = useState<Partial<StatusAttribute>>({ key: '', name: '', description: '', is_active: true });
@@ -31,6 +33,7 @@ export default function StatusAttributeTab() {
             setNewItem({ key: '', name: '', description: '', is_active: true });
             setIsCreating(false);
             fetchAttributes();
+            refresh();
         } catch (e) {
             console.error(e);
         }
@@ -42,6 +45,7 @@ export default function StatusAttributeTab() {
             await api.put(`/status_attributes/${id}`, editItem);
             setEditingId(null);
             fetchAttributes();
+            refresh();
         } catch (e) {
             console.error(e);
         }
@@ -52,6 +56,7 @@ export default function StatusAttributeTab() {
         try {
             await api.delete(`/status_attributes/${id}`);
             fetchAttributes();
+            refresh();
         } catch (e) {
             console.error(e);
         }

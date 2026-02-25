@@ -234,10 +234,15 @@ export default function EquipmentTab() {
                                         {modifiers.map((mod, index) => (
                                             <div key={index} className="flex items-center gap-2 bg-white p-2 border border-gray-200 rounded">
                                                 <select
-                                                    value={mod.attribute}
+                                                    value={statusAttributes.some(a => a.key === mod.attribute) ? mod.attribute : "invalid"}
                                                     onChange={e => updateModifier(index, 'attribute', e.target.value)}
-                                                    className="border border-gray-300 rounded px-2 py-1 text-sm outline-none"
+                                                    className={`border rounded px-2 py-1 text-sm outline-none ${!statusAttributes.some(a => a.key === mod.attribute) ? 'border-red-300 text-red-500 bg-red-50' : 'border-gray-300'}`}
                                                 >
+                                                    {!statusAttributes.some(a => a.key === mod.attribute) && (
+                                                        <option value="invalid" disabled className="text-red-500">
+                                                            (無効/削除済：{mod.attribute})
+                                                        </option>
+                                                    )}
                                                     {statusAttributes.map(attr => (
                                                         <option key={attr.key} value={attr.key}>{attr.name}</option>
                                                     ))}
