@@ -96,7 +96,7 @@ function SortableStatusItem({ attr, editingId, editItem, setEditItem, setEditing
                                 <span className="px-2 py-1 bg-green-50 text-green-700 border border-green-200 rounded text-xs font-medium">有効</span> :
                                 <span className="px-2 py-1 bg-gray-50 text-gray-500 border border-gray-200 rounded text-xs font-medium">無効</span>}
                         </div>
-                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition">
+                        <div className="flex items-center gap-2">
                             <button onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setEditingId(attr.id); setEditItem(attr); }} className="text-gray-400 hover:text-indigo-600 p-2 transition">
                                 <Edit2 size={16} />
                             </button>
@@ -211,7 +211,7 @@ export default function StatusAttributeTab() {
 
     return (
         <div className="bg-white rounded-lg shadow min-h-[500px] flex flex-col">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50/50">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
                 <div className="flex items-center gap-4">
                     <div>
                         <h3 className="text-lg font-bold text-gray-800">ステータス項目定義</h3>

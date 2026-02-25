@@ -298,7 +298,7 @@ export default function ProfileAttributeTab() {
 
     return (
         <div className="bg-white rounded-lg shadow min-h-[500px] flex flex-col">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50/50">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
                 <div>
                     <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                         <UserIcon className="text-indigo-600" />
