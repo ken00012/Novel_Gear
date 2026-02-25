@@ -20,7 +20,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-interface SortableRowProps {
+interface SortableStatusItemProps {
     attr: StatusAttribute;
     editingId: number | null;
     editItem: Partial<StatusAttribute>;
@@ -28,16 +28,17 @@ interface SortableRowProps {
     setEditingId: (id: number | null) => void;
     handleUpdate: (id: number) => void;
     handleDelete: (id: number) => void;
+    disabled?: boolean;
 }
 
-function SortableRow({ attr, editingId, editItem, setEditItem, setEditingId, handleUpdate, handleDelete }: SortableRowProps) {
+function SortableStatusItem({ attr, editingId, editItem, setEditItem, setEditingId, handleUpdate, handleDelete, disabled }: SortableStatusItemProps) {
     const {
         attributes,
         listeners,
         setNodeRef,
         transform,
         transition,
-    } = useSortable({ id: attr.id });
+    } = useSortable({ id: attr.id, disabled });
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -45,52 +46,68 @@ function SortableRow({ attr, editingId, editItem, setEditItem, setEditingId, han
     };
 
     return (
-        <tr ref={setNodeRef} style={style} className="border-b last:border-b-0 transition group bg-white">
-            <td className="p-3 text-gray-300 hover:text-gray-500 cursor-grab">
-                <div {...attributes} {...listeners} className="p-1 inline-block outline-none">
+        <div ref={setNodeRef} style={style} className={`border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm hover:shadow transition group ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
+            <div className="p-4 flex items-center gap-4">
+                <div {...attributes} {...listeners} className="text-gray-300 hover:text-gray-500 cursor-grab p-1 outline-none">
                     <GripVertical size={16} />
                 </div>
-            </td>
-            {editingId === attr.id ? (
-                <>
-                    <td className="p-3">
-                        <input value={editItem.name || ''} onChange={e => setEditItem({ ...editItem, name: e.target.value })} className="w-full p-1 border rounded text-sm" />
-                    </td>
-                    <td className="p-3">
-                        <input value={editItem.description || ''} onChange={e => setEditItem({ ...editItem, description: e.target.value })} className="w-full p-1 border rounded text-sm" />
-                    </td>
-                    <td className="p-3 text-center">
-                        <input type="checkbox" checked={editItem.is_active} onChange={e => setEditItem({ ...editItem, is_active: e.target.checked })} className="rounded text-indigo-600 focus:ring-indigo-500" />
-                    </td>
-                    <td className="p-3 text-center">
-                        <div className="flex items-center justify-center gap-2">
-                            <button onClick={() => handleUpdate(attr.id)} className="text-green-600 hover:text-green-800"><Check size={16} /></button>
-                            <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-gray-600"><X size={16} /></button>
+                {editingId === attr.id ? (
+                    <>
+                        <div className="flex-1 grid grid-cols-2 gap-2">
+                            <input
+                                value={editItem.name || ''}
+                                onChange={e => setEditItem({ ...editItem, name: e.target.value })}
+                                className="w-full border border-gray-300 rounded px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="表示名"
+                            />
+                            <input
+                                value={editItem.description || ''}
+                                onChange={e => setEditItem({ ...editItem, description: e.target.value })}
+                                className="w-full border border-gray-300 rounded px-2 py-1 outline-none focus:ring-2 focus:ring-indigo-500"
+                                placeholder="説明"
+                            />
                         </div>
-                    </td>
-                </>
-            ) : (
-                <>
-                    <td className="p-3 font-bold text-gray-800">{attr.name}</td>
-                    <td className="p-3 text-gray-500">{attr.description || <span className="text-gray-300 italic">なし</span>}</td>
-                    <td className="p-3 text-center">
-                        {attr.is_active ?
-                            <span className="px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-bold">有効</span> :
-                            <span className="px-2 py-0.5 bg-gray-100 text-gray-500 rounded-full text-xs box-border">無効</span>}
-                    </td>
-                    <td className="p-3 text-center">
-                        <div className="flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition">
-                            <button onClick={() => { setEditingId(attr.id); setEditItem(attr); }} className="text-indigo-400 hover:text-indigo-600" title="編集">
+                        <div className="flex items-center gap-2">
+                            <label className="flex items-center gap-1 text-sm text-gray-600">
+                                <input
+                                    type="checkbox"
+                                    checked={editItem.is_active}
+                                    onChange={e => setEditItem({ ...editItem, is_active: e.target.checked })}
+                                    className="rounded text-indigo-600 focus:ring-indigo-500"
+                                /> 有効化
+                            </label>
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={() => handleUpdate(attr.id)} className="bg-green-600 text-white p-2 rounded hover:bg-green-700" title="保存">
+                                <Check size={18} />
+                            </button>
+                            <button onClick={() => setEditingId(null)} className="bg-gray-200 text-gray-600 p-2 rounded hover:bg-gray-300" title="キャンセル">
+                                <X size={18} />
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <div className="flex-1 font-bold text-gray-800 text-lg">
+                            {attr.name} <span className="text-sm font-normal text-gray-500 ml-2">{attr.description || <span className="italic text-gray-300">説明なし</span>}</span>
+                        </div>
+                        <div className="w-24 flex justify-center">
+                            {attr.is_active ?
+                                <span className="px-2 py-1 bg-green-50 text-green-700 border border-green-200 rounded text-xs font-medium">有効</span> :
+                                <span className="px-2 py-1 bg-gray-50 text-gray-500 border border-gray-200 rounded text-xs font-medium">無効</span>}
+                        </div>
+                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition">
+                            <button onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setEditingId(attr.id); setEditItem(attr); }} className="text-gray-400 hover:text-indigo-600 p-2 transition">
                                 <Edit2 size={16} />
                             </button>
-                            <button onClick={() => handleDelete(attr.id)} className="text-gray-300 hover:text-red-500" title="削除">
+                            <button onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); handleDelete(attr.id); }} className="text-gray-400 hover:text-red-500 p-2 transition">
                                 <Trash2 size={16} />
                             </button>
                         </div>
-                    </td>
-                </>
-            )}
-        </tr>
+                    </>
+                )}
+            </div>
+        </div>
     );
 }
 
@@ -159,10 +176,13 @@ export default function StatusAttributeTab() {
         }
     };
 
+    const [isReordering, setIsReordering] = useState(false);
+
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
 
         if (over && active.id !== over.id) {
+            setIsReordering(true);
             const oldIndex = attributes.findIndex(a => a.id === active.id);
             const newIndex = attributes.findIndex(a => a.id === over.id);
 
@@ -183,76 +203,82 @@ export default function StatusAttributeTab() {
             } catch (e) {
                 console.error(e);
                 fetchAttributes(); // revert on error
+            } finally {
+                setIsReordering(false);
             }
         }
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                <div>
-                    <h3 className="text-lg font-bold text-gray-800">ステータス項目定義</h3>
-                    <p className="text-sm text-gray-500">ゲームや世界観に合わせた独自のステータス項目（HP, 筋力, 魅力など）を定義します。</p>
+        <div className="bg-white rounded-lg shadow min-h-[500px] flex flex-col">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50/50">
+                <div className="flex items-center gap-4">
+                    <div>
+                        <h3 className="text-lg font-bold text-gray-800">ステータス項目定義</h3>
+                        <p className="text-sm text-gray-500 mt-1">ゲームや世界観に合わせた独自のステータス項目（HP, 筋力, 魅力など）を定義します。</p>
+                    </div>
                 </div>
-                <button
-                    onClick={() => setIsCreating(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition"
-                >
-                    <Plus size={18} /> 新規項目追加
-                </button>
+                <div className="flex items-center gap-4">
+                    {isReordering && (
+                        <div className="text-sm text-indigo-600 font-medium bg-indigo-50 px-3 py-1 rounded-full animate-pulse border border-indigo-100">
+                            並べ替えを保存中...
+                        </div>
+                    )}
+                    {!isCreating && (
+                        <button
+                            onClick={() => setIsCreating(true)}
+                            disabled={isReordering}
+                            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition shadow-sm"
+                        >
+                            <Plus size={18} /> 新規項目追加
+                        </button>
+                    )}
+                </div>
             </div>
 
-            {isCreating && (
-                <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-100 mb-6 flex flex-col gap-3">
-                    <h4 className="font-bold text-indigo-800 text-sm">新規項目の追加</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="col-span-2">
-                            <label className="block text-xs font-bold text-gray-600 mb-1">表示名 (例: 体力, 筋力)</label>
-                            <input
-                                value={newItem.name || ''}
-                                onChange={e => setNewItem({ ...newItem, name: e.target.value })}
-                                className="w-full text-sm p-2 border rounded focus:ring-1 focus:outline-none"
-                            />
-                        </div>
-                        <div className="col-span-2">
-                            <label className="block text-xs font-bold text-gray-600 mb-1">説明 (任意)</label>
-                            <input
-                                value={newItem.description || ''}
-                                onChange={e => setNewItem({ ...newItem, description: e.target.value })}
-                                className="w-full text-sm p-2 border rounded focus:ring-1 focus:outline-none"
-                            />
-                        </div>
-                    </div>
-                    <div className="flex justify-end gap-2 mt-2">
-                        <button onClick={() => setIsCreating(false)} className="px-4 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded transition">キャンセル</button>
-                        <button onClick={handleCreate} disabled={!newItem.name} className="px-4 py-1.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 rounded transition">追加する</button>
-                    </div>
-                </div>
-            )}
+            <div className="flex-1 p-6 overflow-y-auto">
 
-            <DndContext
-                sensors={sensors}
-                collisionDetection={closestCenter}
-                onDragEnd={handleDragEnd}
-            >
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-gray-50 border-b border-gray-200 text-xs text-gray-500 uppercase">
-                                <th className="p-3 w-10"></th>
-                                <th className="p-3 font-medium">表示名</th>
-                                <th className="p-3 font-medium">説明</th>
-                                <th className="p-3 w-24 text-center font-medium">有効</th>
-                                <th className="p-3 w-24 text-center font-medium">アクション</th>
-                            </tr>
-                        </thead>
-                        <tbody className="text-sm">
+                {isCreating && (
+                    <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-100 mb-6 flex flex-col gap-3">
+                        <h4 className="font-bold text-indigo-800 text-sm">新規項目の追加</h4>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="col-span-2">
+                                <label className="block text-xs font-bold text-gray-600 mb-1">表示名 (例: 体力, 筋力)</label>
+                                <input
+                                    value={newItem.name || ''}
+                                    onChange={e => setNewItem({ ...newItem, name: e.target.value })}
+                                    className="w-full text-sm p-2 border rounded focus:ring-1 focus:outline-none"
+                                />
+                            </div>
+                            <div className="col-span-2">
+                                <label className="block text-xs font-bold text-gray-600 mb-1">説明 (任意)</label>
+                                <input
+                                    value={newItem.description || ''}
+                                    onChange={e => setNewItem({ ...newItem, description: e.target.value })}
+                                    className="w-full text-sm p-2 border rounded focus:ring-1 focus:outline-none"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-2 mt-2">
+                            <button onClick={() => setIsCreating(false)} className="px-4 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded transition">キャンセル</button>
+                            <button onClick={handleCreate} disabled={!newItem.name} className="px-4 py-1.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 rounded transition">追加する</button>
+                        </div>
+                    </div>
+                )}
+
+                <div className="space-y-3">
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                    >
+                        <div className="space-y-2">
                             <SortableContext
                                 items={attributes.map(a => a.id)}
                                 strategy={verticalListSortingStrategy}
                             >
                                 {attributes.map(attr => (
-                                    <SortableRow
+                                    <SortableStatusItem
                                         key={attr.id}
                                         attr={attr}
                                         editingId={editingId}
@@ -261,20 +287,19 @@ export default function StatusAttributeTab() {
                                         setEditingId={setEditingId}
                                         handleUpdate={handleUpdate}
                                         handleDelete={handleDelete}
+                                        disabled={isReordering}
                                     />
                                 ))}
                             </SortableContext>
                             {attributes.length === 0 && !isCreating && (
-                                <tr>
-                                    <td colSpan={5} className="p-8 text-center text-gray-500">
-                                        ステータス項目が登録されていません。右上から追加してください。
-                                    </td>
-                                </tr>
+                                <div className="p-8 text-center text-gray-500 bg-white rounded-lg border border-dashed border-gray-300">
+                                    ステータス項目が登録されていません。右上から追加してください。
+                                </div>
                             )}
-                        </tbody>
-                    </table>
+                        </div>
+                    </DndContext>
                 </div>
-            </DndContext>
+            </div>
         </div>
     );
 }

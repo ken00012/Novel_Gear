@@ -34,12 +34,13 @@ interface SortableProfileItemProps {
     setNewTagName: (val: string) => void;
     handleAddTag: () => void;
     handleDeleteTag: (id: number) => void;
+    disabled?: boolean;
 }
 
 function SortableProfileItem({
     attr, editingId, editItem, setEditItem, setEditingId,
     handleUpdate, handleDelete, managingTagsFor, setManagingTagsFor,
-    newTagName, setNewTagName, handleAddTag, handleDeleteTag
+    newTagName, setNewTagName, handleAddTag, handleDeleteTag, disabled
 }: SortableProfileItemProps) {
     const {
         attributes,
@@ -47,7 +48,7 @@ function SortableProfileItem({
         setNodeRef,
         transform,
         transition,
-    } = useSortable({ id: attr.id });
+    } = useSortable({ id: attr.id, disabled });
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -55,7 +56,7 @@ function SortableProfileItem({
     };
 
     return (
-        <div ref={setNodeRef} style={style} className="border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm hover:shadow transition group">
+        <div ref={setNodeRef} style={style} className={`border border-gray-200 rounded-lg bg-white overflow-hidden shadow-sm hover:shadow transition group ${disabled ? 'opacity-50 pointer-events-none' : ''}`}>
             <div className="p-4 flex items-center gap-4">
                 <div {...attributes} {...listeners} className="text-gray-300 hover:text-gray-500 cursor-grab p-1 outline-none">
                     <GripVertical size={16} />
@@ -262,10 +263,13 @@ export default function ProfileAttributeTab() {
         })
     );
 
+    const [isReordering, setIsReordering] = useState(false);
+
     const handleDragEnd = async (event: DragEndEvent) => {
         const { active, over } = event;
 
         if (over && active.id !== over.id) {
+            setIsReordering(true);
             const oldIndex = attributes.findIndex(a => a.id === active.id);
             const newIndex = attributes.findIndex(a => a.id === over.id);
 
@@ -286,6 +290,8 @@ export default function ProfileAttributeTab() {
             } catch (e) {
                 console.error(e);
                 fetchAttributes(); // revert on error
+            } finally {
+                setIsReordering(false);
             }
         }
     };
@@ -300,14 +306,22 @@ export default function ProfileAttributeTab() {
                     </h3>
                     <p className="text-sm text-gray-500 mt-1">キャラクターのプロフィール（年齢、種族、陣営など）の入力項目をカスタマイズします。</p>
                 </div>
-                {!isCreating && (
-                    <button
-                        onClick={() => setIsCreating(true)}
-                        className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-sm"
-                    >
-                        <Plus size={18} /> 新規項目追加
-                    </button>
-                )}
+                <div className="flex items-center gap-4">
+                    {isReordering && (
+                        <div className="text-sm text-indigo-600 font-medium bg-indigo-50 px-3 py-1 rounded-full animate-pulse border border-indigo-100">
+                            並べ替えを保存中...
+                        </div>
+                    )}
+                    {!isCreating && (
+                        <button
+                            onClick={() => setIsCreating(true)}
+                            disabled={isReordering}
+                            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition shadow-sm"
+                        >
+                            <Plus size={18} /> 新規項目追加
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div className="flex-1 p-6 overflow-y-auto">
