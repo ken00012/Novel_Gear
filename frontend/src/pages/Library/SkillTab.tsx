@@ -89,7 +89,8 @@ export default function SkillTab() {
     const formatModifierLabel = (mod: Modifier) => {
         const sign = mod.value >= 0 ? '+' : '';
         const unit = mod.type === 'percent' ? '%' : '';
-        const attrName = statusAttributes.find(a => a.key === mod.attribute)?.name || mod.attribute;
+        const attrName = statusAttributes.find(a => a.key === mod.attribute)?.name
+            || (mod.attribute_name ? `(削除済：${mod.attribute_name})` : mod.attribute);
         return `${attrName} ${sign}${mod.value}${unit}`;
     };
 
@@ -203,7 +204,7 @@ export default function SkillTab() {
                                                 >
                                                     {!statusAttributes.some(a => a.key === mod.attribute) && (
                                                         <option value="invalid" disabled className="text-red-500">
-                                                            (無効/削除済：{mod.attribute})
+                                                            (削除済：{mod.attribute_name || mod.attribute})
                                                         </option>
                                                     )}
                                                     {statusAttributes.map(attr => (

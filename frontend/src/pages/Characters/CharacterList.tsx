@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, type Character } from '../../api';
-import { UserPlus, Settings, Trash2 } from 'lucide-react';
+import { UserPlus, Settings, Trash2, User, Swords } from 'lucide-react';
 import { useProfileAttributes } from '../../contexts/ProfileContext';
 
 export default function CharacterList() {
@@ -154,14 +154,14 @@ export default function CharacterList() {
                                 onClick={() => navigate(`/characters/${char.id}?tab=profile`)}
                                 className="flex-1 flex justify-center items-center gap-1.5 text-sm text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 py-2.5 rounded-lg transition font-medium shadow-sm"
                             >
-                                <Settings size={16} /> 編集
+                                <User size={16} /> プロフィール編集
                             </button>
                             {char.is_status_enabled && (
                                 <button
                                     onClick={() => navigate(`/characters/${char.id}?tab=status`)}
                                     className="flex-1 flex justify-center items-center gap-1.5 text-sm text-white bg-indigo-600 hover:bg-indigo-700 py-2.5 rounded-lg transition font-medium shadow-sm"
                                 >
-                                    <Settings size={16} /> ステータス
+                                    <Swords size={16} /> ステータス
                                 </button>
                             )}
                         </div>

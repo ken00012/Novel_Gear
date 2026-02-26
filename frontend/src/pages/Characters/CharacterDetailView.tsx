@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { api, type Character, type CustomAttribute, type Job, type Skill, type Equipment, type Event, type CharacterState } from '../../api';
 import { ArrowLeft, Plus, Trash2, Copy, User, Swords, X, Loader2, Check } from 'lucide-react';
 import StatusEditorPane from './components/StatusEditorPane';
@@ -14,8 +14,17 @@ export default function CharacterDetailView() {
     const { profileAttributes } = useProfileAttributes();
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [activeTab, setActiveTab] = useState<'profile' | 'status'>('profile');
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const tab = params.get('tab');
+        if (tab === 'profile' || tab === 'status') {
+            setActiveTab(tab);
+        }
+    }, [location.search]);
 
     const [character, setCharacter] = useState<Character | null>(null);
     const [availableJobs, setAvailableJobs] = useState<Job[]>([]);
