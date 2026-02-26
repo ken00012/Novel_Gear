@@ -3,6 +3,7 @@ import { api, type Equipment, type Modifier } from '../../api';
 import { Plus, Edit2, Trash2, X, PlusCircle, MinusCircle } from 'lucide-react';
 import { LibraryEmptyState } from './components/LibraryShared';
 import { useStatusAttributes } from '../../contexts/StatusContext';
+import ConfirmModal from '../../components/ConfirmModal';
 
 const RARITIES = ['N', 'R', 'SR', 'SSR', 'UR', 'Legendary'];
 
@@ -16,6 +17,8 @@ export default function EquipmentTab() {
     const [description, setDescription] = useState('');
     const [rarity, setRarity] = useState('N');
     const [modifiers, setModifiers] = useState<Modifier[]>([]);
+
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
     const fetchEquipments = async () => {
         try {
@@ -67,13 +70,19 @@ export default function EquipmentTab() {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('本当に削除しますか？')) return;
+    const handleDelete = (id: number) => {
+        setConfirmDeleteId(id);
+    };
+
+    const executeDelete = async () => {
+        if (confirmDeleteId === null) return;
         try {
-            await api.delete(`/equipments/${id}`);
+            await api.delete(`/equipments/${confirmDeleteId}`);
             fetchEquipments();
         } catch (e) {
             console.error(e);
+        } finally {
+            setConfirmDeleteId(null);
         }
     };
 
@@ -287,6 +296,13 @@ export default function EquipmentTab() {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={confirmDeleteId !== null}
+                message="本当に削除しますか？"
+                onConfirm={executeDelete}
+                onCancel={() => setConfirmDeleteId(null)}
+            />
         </div>
     );
 }

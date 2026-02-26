@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api, type BoardNamePreset } from '../../../api';
 import { Trash2, Edit2, Check, X, Plus } from 'lucide-react';
+import ConfirmModal from '../../../components/ConfirmModal';
 
 interface BoardNameLibraryEditorProps {
     onClose: () => void;
@@ -11,6 +12,8 @@ export default function BoardNameLibraryEditor({ onClose, onListUpdated }: Board
     const [presets, setPresets] = useState<BoardNamePreset[]>([]);
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editItem, setEditItem] = useState<{ name: string; user_id_str: string }>({ name: '', user_id_str: '' });
+
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
     // For new creation inside modal
     const [isCreating, setIsCreating] = useState(false);
@@ -31,14 +34,20 @@ export default function BoardNameLibraryEditor({ onClose, onListUpdated }: Board
         fetchPresets();
     }, []);
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('この名前プリセットを削除しますか？')) return;
+    const handleDelete = (id: number) => {
+        setConfirmDeleteId(id);
+    };
+
+    const executeDelete = async () => {
+        if (confirmDeleteId === null) return;
         try {
-            await api.delete(`/board_name_presets/${id}`);
-            setPresets(presets.filter(p => p.id !== id));
+            await api.delete(`/board_name_presets/${confirmDeleteId}`);
+            setPresets(presets.filter(p => p.id !== confirmDeleteId));
             onListUpdated();
         } catch (e) {
             console.error(e);
+        } finally {
+            setConfirmDeleteId(null);
         }
     };
 
@@ -199,6 +208,13 @@ export default function BoardNameLibraryEditor({ onClose, onListUpdated }: Board
                     </div>
                 </div>
             </div>
+
+            <ConfirmModal
+                isOpen={confirmDeleteId !== null}
+                message="この名前プリセットを削除しますか？"
+                onConfirm={executeDelete}
+                onCancel={() => setConfirmDeleteId(null)}
+            />
         </div>
     );
 }

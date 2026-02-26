@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import { api, type Plot, type Event } from '../../api';
 import PlotBoard from './components/PlotBoard';
 import PlotEditorModal from './components/PlotEditorModal';
+import ConfirmModal from '../../components/ConfirmModal';
 
 export default function PlotDashboard() {
     const [plots, setPlots] = useState<Plot[]>([]);
     const [events, setEvents] = useState<Event[]>([]);
     const [editingPlot, setEditingPlot] = useState<Plot | null>(null);
     const [isCreating, setIsCreating] = useState<string | null>(null); // phase_type of new plot
+
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
     const fetchData = async () => {
         try {
@@ -41,13 +44,19 @@ export default function PlotDashboard() {
         }
     };
 
-    const handleDeletePlot = async (id: number) => {
-        if (!confirm('このプロットを削除しますか？')) return;
+    const handleDeletePlot = (id: number) => {
+        setConfirmDeleteId(id);
+    };
+
+    const executeDeletePlot = async () => {
+        if (confirmDeleteId === null) return;
         try {
-            await api.delete(`/plots/${id}`);
+            await api.delete(`/plots/${confirmDeleteId}`);
             fetchData();
         } catch (e) {
             console.error(e);
+        } finally {
+            setConfirmDeleteId(null);
         }
     };
 
@@ -74,6 +83,13 @@ export default function PlotDashboard() {
                     onClose={() => { setEditingPlot(null); setIsCreating(null); }}
                 />
             )}
+
+            <ConfirmModal
+                isOpen={confirmDeleteId !== null}
+                message="このプロットを削除しますか？"
+                onConfirm={executeDeletePlot}
+                onCancel={() => setConfirmDeleteId(null)}
+            />
         </div>
     );
 }

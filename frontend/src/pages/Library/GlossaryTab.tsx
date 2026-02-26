@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api, type Glossary } from '../../api';
 import { Plus, Edit2, Trash2, X } from 'lucide-react';
 import { LibraryEmptyState } from './components/LibraryShared';
+import ConfirmModal from '../../components/ConfirmModal';
 
 export default function GlossaryTab() {
     const [glossaries, setGlossaries] = useState<Glossary[]>([]);
@@ -10,6 +11,8 @@ export default function GlossaryTab() {
 
     const [term, setTerm] = useState('');
     const [description, setDescription] = useState('');
+
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
     const fetchGlossaries = async () => {
         try {
@@ -59,13 +62,19 @@ export default function GlossaryTab() {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('本当に削除しますか？')) return;
+    const handleDelete = (id: number) => {
+        setConfirmDeleteId(id);
+    };
+
+    const executeDelete = async () => {
+        if (confirmDeleteId === null) return;
         try {
-            await api.delete(`/glossary/${id}`);
+            await api.delete(`/glossary/${confirmDeleteId}`);
             fetchGlossaries();
         } catch (e) {
             console.error(e);
+        } finally {
+            setConfirmDeleteId(null);
         }
     };
 
@@ -149,6 +158,13 @@ export default function GlossaryTab() {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={confirmDeleteId !== null}
+                message="本当に削除しますか？"
+                onConfirm={executeDelete}
+                onCancel={() => setConfirmDeleteId(null)}
+            />
         </div>
     );
 }

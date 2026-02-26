@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { api, type Character } from '../../api';
 import { UserPlus, Settings, Trash2, User, Swords } from 'lucide-react';
 import { useProfileAttributes } from '../../contexts/ProfileContext';
+import ConfirmModal from '../../components/ConfirmModal';
 
 export default function CharacterList() {
     const { profileAttributes } = useProfileAttributes();
@@ -14,6 +15,8 @@ export default function CharacterList() {
     const [displayItems, setDisplayItems] = useState<string[]>(['陣営']);
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [editDisplayItems, setEditDisplayItems] = useState<string[]>([]);
+
+    const [confirmDeleteCharacter, setConfirmDeleteCharacter] = useState<{ id: number | null, name: string }>({ id: null, name: '' });
 
     const fetchCharacters = async () => {
         try {
@@ -50,14 +53,20 @@ export default function CharacterList() {
         }
     };
 
-    const handleDeleteCharacter = async (e: React.MouseEvent, id: number, name: string) => {
+    const handleDeleteCharacter = (e: React.MouseEvent, id: number, name: string) => {
         e.stopPropagation();
-        if (!window.confirm(`「${name}」を削除しますか？\n関連するステータス等のデータも全て消去されます。`)) return;
+        setConfirmDeleteCharacter({ id, name });
+    };
+
+    const executeDeleteCharacter = async () => {
+        if (confirmDeleteCharacter.id === null) return;
         try {
-            await api.delete(`/characters/${id}`);
+            await api.delete(`/characters/${confirmDeleteCharacter.id}`);
             fetchCharacters();
         } catch (err) {
             console.error(err);
+        } finally {
+            setConfirmDeleteCharacter({ id: null, name: '' });
         }
     };
 
@@ -251,6 +260,13 @@ export default function CharacterList() {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={confirmDeleteCharacter.id !== null}
+                message={`「${confirmDeleteCharacter.name}」を削除しますか？\n関連するステータス等のデータも全て消去されます。`}
+                onConfirm={executeDeleteCharacter}
+                onCancel={() => setConfirmDeleteCharacter({ id: null, name: '' })}
+            />
         </div>
     );
 }

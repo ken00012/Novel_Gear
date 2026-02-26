@@ -3,6 +3,7 @@ import { api, type Job } from '../../api';
 import { Plus, Edit2, Trash2, X } from 'lucide-react';
 import { LibraryEmptyState } from './components/LibraryShared';
 import { useStatusAttributes } from '../../contexts/StatusContext';
+import ConfirmModal from '../../components/ConfirmModal';
 
 export default function JobTab() {
     const { statusAttributes } = useStatusAttributes();
@@ -14,6 +15,8 @@ export default function JobTab() {
     const [description, setDescription] = useState('');
     const [baseStats, setBaseStats] = useState<Record<string, number>>({});
     const [statGrowth, setStatGrowth] = useState<Record<string, number>>({});
+
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
     const fetchJobs = async () => {
         try {
@@ -66,13 +69,19 @@ export default function JobTab() {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('本当に削除しますか？')) return;
+    const handleDelete = (id: number) => {
+        setConfirmDeleteId(id);
+    };
+
+    const executeDelete = async () => {
+        if (confirmDeleteId === null) return;
         try {
-            await api.delete(`/jobs/${id}`);
+            await api.delete(`/jobs/${confirmDeleteId}`);
             fetchJobs();
         } catch (e) {
             console.error(e);
+        } finally {
+            setConfirmDeleteId(null);
         }
     };
 
@@ -223,6 +232,13 @@ export default function JobTab() {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={confirmDeleteId !== null}
+                message="本当に削除しますか？"
+                onConfirm={executeDelete}
+                onCancel={() => setConfirmDeleteId(null)}
+            />
         </div>
     );
 }

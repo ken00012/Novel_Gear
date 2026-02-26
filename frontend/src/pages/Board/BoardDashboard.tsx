@@ -3,6 +3,7 @@ import { api, type BoardThread } from '../../api';
 import BoardEditor from './components/BoardEditor';
 import { Plus, Trash2, MessageSquare, Pencil } from 'lucide-react';
 import CreateItemForm from '../../components/common/CreateItemForm';
+import ConfirmModal from '../../components/ConfirmModal';
 
 export default function BoardDashboard() {
     const [threads, setThreads] = useState<BoardThread[]>([]);
@@ -10,6 +11,7 @@ export default function BoardDashboard() {
     const [showNewThread, setShowNewThread] = useState(false);
 
     const [editingThreadId, setEditingThreadId] = useState<number | null>(null);
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
     const fetchThreads = async () => {
         try {
@@ -62,16 +64,22 @@ export default function BoardDashboard() {
         }
     };
 
-    const handleDeleteThread = async (id: number) => {
-        if (!confirm('本当にこのスレッドを削除しますか？\n（含まれるすべての書き込みも消去されます）')) return;
+    const handleDeleteThread = (id: number) => {
+        setConfirmDeleteId(id);
+    };
+
+    const executeDeleteThread = async () => {
+        if (confirmDeleteId === null) return;
         try {
-            await api.delete(`/board_threads/${id}`);
-            if (selectedThreadId === id) setSelectedThreadId(null);
+            await api.delete(`/board_threads/${confirmDeleteId}`);
+            if (selectedThreadId === confirmDeleteId) setSelectedThreadId(null);
             fetchThreads();
         } catch (e) {
             console.error(e);
+        } finally {
+            setConfirmDeleteId(null);
         }
-    }
+    };
 
     const selectedThread = threads.find(t => t.id === selectedThreadId);
 
@@ -165,6 +173,13 @@ export default function BoardDashboard() {
                     </div>
                 )}
             </div>
+
+            <ConfirmModal
+                isOpen={confirmDeleteId !== null}
+                message="本当にこのスレッドを削除しますか？\n（含まれるすべての書き込みも消去されます）"
+                onConfirm={executeDeleteThread}
+                onCancel={() => setConfirmDeleteId(null)}
+            />
         </div>
     );
 }

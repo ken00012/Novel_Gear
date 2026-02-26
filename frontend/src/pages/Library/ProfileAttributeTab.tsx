@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api, type CharacterProfileAttribute } from '../../api';
 import { User, GripVertical, Check, X, Plus, Edit2, Trash2, Tag as TagIcon } from 'lucide-react';
 import { LibraryEmptyState } from './components/LibraryShared';
+import ConfirmModal from '../../components/ConfirmModal';
 import { useProfileAttributes } from '../../contexts/ProfileContext';
 import {
     DndContext,
@@ -174,6 +175,9 @@ export default function ProfileAttributeTab() {
     const [managingTagsFor, setManagingTagsFor] = useState<CharacterProfileAttribute | null>(null);
     const [newTagName, setNewTagName] = useState('');
 
+    // Confirm Delete State
+    const [confirmDelete, setConfirmDelete] = useState<{ type: 'attribute' | 'tag' | null, id: number | null, message: string }>({ type: null, id: null, message: '' });
+
     const fetchAttributes = async () => {
         try {
             const res = await api.get<CharacterProfileAttribute[]>('/profile_attributes/');
@@ -220,15 +224,12 @@ export default function ProfileAttributeTab() {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('このプロフィール項目を削除しますか？\n（関連するキャラクターデータやタグも削除されます）')) return;
-        try {
-            await api.delete(`/profile_attributes/${id}`);
-            fetchAttributes();
-            refresh();
-        } catch (e) {
-            console.error(e);
-        }
+    const handleDelete = (id: number) => {
+        setConfirmDelete({
+            type: 'attribute',
+            id,
+            message: 'このプロフィール項目を削除しますか？\n（関連するキャラクターデータやタグも削除されます）'
+        });
     };
 
     // --- Tags CRUD ---
@@ -246,14 +247,28 @@ export default function ProfileAttributeTab() {
         }
     };
 
-    const handleDeleteTag = async (tagId: number) => {
-        if (!confirm('このタグを削除しますか？\n（キャラクターに設定されているデータは文字列として残ります）')) return;
+    const handleDeleteTag = (tagId: number) => {
+        setConfirmDelete({
+            type: 'tag',
+            id: tagId,
+            message: 'このタグを削除しますか？\n（キャラクターに設定されているデータは文字列として残ります）'
+        });
+    };
+
+    const executeDelete = async () => {
+        if (!confirmDelete.id || !confirmDelete.type) return;
         try {
-            await api.delete(`/tags/${tagId}`);
+            if (confirmDelete.type === 'attribute') {
+                await api.delete(`/profile_attributes/${confirmDelete.id}`);
+            } else if (confirmDelete.type === 'tag') {
+                await api.delete(`/tags/${confirmDelete.id}`);
+            }
             fetchAttributes();
             refresh();
         } catch (e) {
             console.error(e);
+        } finally {
+            setConfirmDelete({ type: null, id: null, message: '' });
         }
     };
 
@@ -403,6 +418,13 @@ export default function ProfileAttributeTab() {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={confirmDelete.id !== null}
+                message={confirmDelete.message}
+                onConfirm={executeDelete}
+                onCancel={() => setConfirmDelete({ type: null, id: null, message: '' })}
+            />
         </div>
     );
 }

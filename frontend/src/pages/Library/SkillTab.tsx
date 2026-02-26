@@ -3,6 +3,7 @@ import { api, type Skill, type Modifier } from '../../api';
 import { Plus, Edit2, Trash2, X, PlusCircle, MinusCircle } from 'lucide-react';
 import { LibraryEmptyState } from './components/LibraryShared';
 import { useStatusAttributes } from '../../contexts/StatusContext';
+import ConfirmModal from '../../components/ConfirmModal';
 
 export default function SkillTab() {
     const { statusAttributes } = useStatusAttributes();
@@ -13,6 +14,8 @@ export default function SkillTab() {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
     const [modifiers, setModifiers] = useState<Modifier[]>([]);
+
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
     const fetchSkills = async () => {
         try {
@@ -62,13 +65,19 @@ export default function SkillTab() {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('本当に削除しますか？')) return;
+    const handleDelete = (id: number) => {
+        setConfirmDeleteId(id);
+    };
+
+    const executeDelete = async () => {
+        if (confirmDeleteId === null) return;
         try {
-            await api.delete(`/skills/${id}`);
+            await api.delete(`/skills/${confirmDeleteId}`);
             fetchSkills();
         } catch (e) {
             console.error(e);
+        } finally {
+            setConfirmDeleteId(null);
         }
     };
 
@@ -251,6 +260,13 @@ export default function SkillTab() {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={confirmDeleteId !== null}
+                message="本当に削除しますか？"
+                onConfirm={executeDelete}
+                onCancel={() => setConfirmDeleteId(null)}
+            />
         </div>
     );
 }

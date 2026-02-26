@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { api, type StatusAttribute } from '../../api';
 import { Plus, Trash2, Edit2, Check, X, GripVertical } from 'lucide-react';
 import { LibraryEmptyState } from './components/LibraryShared';
+import ConfirmModal from '../../components/ConfirmModal';
 import { useStatusAttributes } from '../../contexts/StatusContext';
 import {
     DndContext,
@@ -106,6 +107,8 @@ export default function StatusAttributeTab() {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editItem, setEditItem] = useState<Partial<StatusAttribute>>({});
 
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+
     const sensors = useSensors(
         useSensor(PointerSensor),
         useSensor(KeyboardSensor, {
@@ -151,14 +154,20 @@ export default function StatusAttributeTab() {
         }
     };
 
-    const handleDelete = async (id: number) => {
-        if (!confirm('このステータス項目を削除しますか？\n（すでに割り当てられているデータに影響が出る可能性があります）')) return;
+    const handleDelete = (id: number) => {
+        setConfirmDeleteId(id);
+    };
+
+    const executeDelete = async () => {
+        if (confirmDeleteId === null) return;
         try {
-            await api.delete(`/status_attributes/${id}`);
+            await api.delete(`/status_attributes/${confirmDeleteId}`);
             fetchAttributes();
             refresh();
         } catch (e) {
             console.error(e);
+        } finally {
+            setConfirmDeleteId(null);
         }
     };
 
@@ -296,6 +305,13 @@ export default function StatusAttributeTab() {
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={confirmDeleteId !== null}
+                message="このステータス項目を削除しますか？\n（すでに割り当てられているデータに影響が出る可能性があります）"
+                onConfirm={executeDelete}
+                onCancel={() => setConfirmDeleteId(null)}
+            />
         </div>
     );
 }

@@ -3,6 +3,7 @@ import { api, type BoardThread, type BoardPost, type BoardNamePreset } from '../
 import LiveWriterInput from './LiveWriterInput';
 import PostItem from './PostItem';
 import { Settings, Copy, Check, X } from 'lucide-react';
+import ConfirmModal from '../../../components/ConfirmModal';
 
 interface BoardEditorProps {
     thread: BoardThread;
@@ -15,6 +16,8 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
     const [showSettings, setShowSettings] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
     const [previewText, setPreviewText] = useState('');
+
+    const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
     // Thread settings temp state
     const [threadTemplate, setThreadTemplate] = useState(thread.thread_template);
@@ -124,14 +127,20 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
         }
     };
 
-    const handleDeletePost = async (id: number) => {
-        if (!confirm('このレスを削除しますか？\n（以降のレス番号は自動的に振り直されます）')) return;
+    const handleDeletePost = (id: number) => {
+        setConfirmDeleteId(id);
+    };
+
+    const executeDeletePost = async () => {
+        if (confirmDeleteId === null) return;
         try {
-            await api.delete(`/board_posts/${id}`);
-            const newPosts = posts.filter(p => p.id !== id);
+            await api.delete(`/board_posts/${confirmDeleteId}`);
+            const newPosts = posts.filter(p => p.id !== confirmDeleteId);
             handleRenumberAndSave(newPosts);
         } catch (e) {
             console.error(e);
+        } finally {
+            setConfirmDeleteId(null);
         }
     };
 
@@ -333,6 +342,13 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
                     </div>
                 </div>
             )}
+
+            <ConfirmModal
+                isOpen={confirmDeleteId !== null}
+                message="このレスを削除しますか？\n（以降のレス番号は自動的に振り直されます）"
+                onConfirm={executeDeletePost}
+                onCancel={() => setConfirmDeleteId(null)}
+            />
         </div>
     );
 }

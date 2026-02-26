@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api, type Event, type Character, type CharacterState, type Job, type Skill, type Equipment } from '../../api';
-import { Plus, Trash2, Edit2, Play, ChevronRight, Hash, Pencil } from 'lucide-react';
+import { Plus, Trash2, Pencil } from 'lucide-react';
 import StatusEditorPane from '../Characters/components/StatusEditorPane';
 import CreateItemForm from '../../components/common/CreateItemForm';
-import ConfirmModal from '../../components/ConfirmModal';
 
 export default function StatusDashboardView() {
     const [events, setEvents] = useState<Event[]>([]);
@@ -13,11 +12,9 @@ export default function StatusDashboardView() {
     const [characters, setCharacters] = useState<Character[]>([]);
     const [selectedCharId, setSelectedCharId] = useState<number | null>(null);
 
-    const [jobs, setJobs] = useState<Job[]>([]);
-    const [skills, setSkills] = useState<Skill[]>([]);
-    const [equipments, setEquipments] = useState<Equipment[]>([]);
-
-    const [confirmDeleteEventId, setConfirmDeleteEventId] = useState<number | null>(null);
+    const [availableJobs, setAvailableJobs] = useState<Job[]>([]);
+    const [availableSkills, setAvailableSkills] = useState<Skill[]>([]);
+    const [availableEquipments, setAvailableEquipments] = useState<Equipment[]>([]);
 
     const [currentState, setCurrentState] = useState<CharacterState | null>(null);
 
@@ -60,9 +57,9 @@ export default function StatusDashboardView() {
                 api.get<Equipment[]>('/equipments/')
             ]);
             setCharacters(charRes.data);
-            setJobs(jobsRes.data);
-            setSkills(skillsRes.data);
-            setEquipments(equipsRes.data);
+            setAvailableJobs(jobsRes.data);
+            setAvailableSkills(skillsRes.data);
+            setAvailableEquipments(equipsRes.data);
             if (charRes.data.length > 0 && !selectedCharId) {
                 setSelectedCharId(charRes.data[0].id);
             }
@@ -145,34 +142,28 @@ export default function StatusDashboardView() {
         }
     };
 
-    const handleDeleteEvent = (e: React.MouseEvent, eventId: number) => {
+    const handleDeleteEvent = async (e: React.MouseEvent, eventId: number) => {
         e.stopPropagation();
-        setConfirmDeleteEventId(eventId);
-    };
-
-    const executeDeleteEvent = async () => {
-        if (confirmDeleteEventId === null) return;
+        if (!window.confirm('縺薙・繧､繝吶Φ繝医ｒ蜑企勁縺励∪縺吶°・歃n窶ｻ髢｢騾｣縺吶ｋ蜷・く繝｣繝ｩ繧ｯ繧ｿ繝ｼ縺ｮ繧ｹ繝・・繧ｿ繧ｹ諠・ｱ繧ょ､ｱ繧上ｌ縺ｾ縺吶・)) return;
         try {
-            await api.delete(`/events/${confirmDeleteEventId}`);
-            if (selectedEventId === confirmDeleteEventId) {
+            await api.delete(`/events/${eventId}`);
+            if (selectedEventId === eventId) {
                 setSelectedEventId(null);
             }
             await fetchEvents();
         } catch (err) {
             console.error(err);
-        } finally {
-            setConfirmDeleteEventId(null);
         }
     };
 
-    // (StatusEditorPane内で保存管理するため削除)
+    // (StatusEditorPane蜀・〒菫晏ｭ倡ｮ｡逅・☆繧九◆繧∝炎髯､)
 
     return (
         <div className="flex h-full bg-gray-50 border-t border-gray-200">
             {/* Timeline Sidebar */}
             <div className="w-80 bg-white border-r border-gray-200 flex flex-col">
                 <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                    <h3 className="font-bold text-gray-700">タイムライン</h3>
+                    <h3 className="font-bold text-gray-700">繧ｿ繧､繝繝ｩ繧､繝ｳ</h3>
                     <button
                         onClick={() => setShowNewEvent(!showNewEvent)}
                         className="p-1 hover:bg-gray-200 rounded text-gray-500 transition"
@@ -184,34 +175,34 @@ export default function StatusDashboardView() {
                 {showNewEvent && (
                     <div className="p-4 border-b border-gray-100 bg-gray-50">
                         <CreateItemForm
-                            chapterLabel="章番号"
-                            chapterPlaceholder="例: 第1話"
-                            titleLabel="イベント名"
-                            titlePlaceholder="例: 魔王討伐後"
+                            chapterLabel="遶逡ｪ蜿ｷ"
+                            chapterPlaceholder="萓・ 隨ｬ1隧ｱ"
+                            titleLabel="繧､繝吶Φ繝亥錐"
+                            titlePlaceholder="萓・ 鬲皮視險惹ｼ仙ｾ・
                             onSubmit={handleAddEvent}
                             onCancel={() => setShowNewEvent(false)}
-                            submitLabel="追加"
+                            submitLabel="霑ｽ蜉"
                         />
                     </div>
                 )}
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
                     {events.length === 0 ? (
-                        <p className="text-sm text-gray-400 text-center py-4">イベントがありません</p>
+                        <p className="text-sm text-gray-400 text-center py-4">繧､繝吶Φ繝医′縺ゅｊ縺ｾ縺帙ｓ</p>
                     ) : (
                         events.map(ev => (
                             editingEventId === ev.id ? (
                                 <CreateItemForm
                                     key={ev.id}
-                                    chapterLabel="章番号"
-                                    chapterPlaceholder="例: 第1話"
-                                    titleLabel="イベント名"
-                                    titlePlaceholder="例: 魔王討伐後"
+                                    chapterLabel="遶逡ｪ蜿ｷ"
+                                    chapterPlaceholder="萓・ 隨ｬ1隧ｱ"
+                                    titleLabel="繧､繝吶Φ繝亥錐"
+                                    titlePlaceholder="萓・ 鬲皮視險惹ｼ仙ｾ・
                                     initialChapter={ev.chapter_number || ''}
                                     initialTitle={ev.event_name}
                                     onSubmit={(ch, tit) => handleSaveEditEvent(ev, ch, tit)}
                                     onCancel={() => setEditingEventId(null)}
-                                    submitLabel="保存"
+                                    submitLabel="菫晏ｭ・
                                 />
                             ) : (
                                 <div
@@ -233,14 +224,14 @@ export default function StatusDashboardView() {
                                                 setEditingEventId(ev.id);
                                             }}
                                             className="text-gray-400 hover:text-indigo-600 transition p-1"
-                                            title="編集"
+                                            title="邱ｨ髮・
                                         >
                                             <Pencil size={16} />
                                         </button>
                                         <button
                                             onClick={(e) => handleDeleteEvent(e, ev.id)}
                                             className="text-gray-400 hover:text-red-500 transition p-1"
-                                            title="削除"
+                                            title="蜑企勁"
                                         >
                                             <Trash2 size={16} />
                                         </button>
@@ -257,7 +248,7 @@ export default function StatusDashboardView() {
                 <div className="flex-1 overflow-y-auto p-8 flex gap-8">
                     {/* Character Selector */}
                     <div className="w-1/3 max-w-xs space-y-2">
-                        <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">対象キャラクター</h4>
+                        <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">蟇ｾ雎｡繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ</h4>
                         {characters.map(char => (
                             <div
                                 key={char.id}
@@ -282,7 +273,7 @@ export default function StatusDashboardView() {
                             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                                 <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-100">
                                     <div>
-                                        <h3 className="text-xl font-bold text-gray-900">{characters.find(c => c.id === selectedCharId)?.name} のステータス</h3>
+                                        <h3 className="text-xl font-bold text-gray-900">{characters.find(c => c.id === selectedCharId)?.name} 縺ｮ繧ｹ繝・・繧ｿ繧ｹ</h3>
                                         <div className="text-sm text-indigo-600 mt-1 font-medium">
                                             {events.find(e => e.id === selectedEventId)?.chapter_number} - {events.find(e => e.id === selectedEventId)?.event_name}
                                         </div>
@@ -292,27 +283,20 @@ export default function StatusDashboardView() {
                                 <StatusEditorPane
                                     character={characters.find(c => c.id === selectedCharId)!}
                                     currentState={currentState}
-                                    availableJobs={jobs}
-                                    availableSkills={skills}
-                                    availableEquipments={equipments}
+                                    availableJobs={availableJobs}
+                                    availableSkills={availableSkills}
+                                    availableEquipments={availableEquipments}
                                     onStateChange={() => fetchState(selectedEventId, selectedCharId)}
                                 />
                             </div>
                         ) : (
                             <div className="h-full flex items-center justify-center text-gray-400">
-                                イベントとキャラクターを選択してください
+                                繧､繝吶Φ繝医→繧ｭ繝｣繝ｩ繧ｯ繧ｿ繝ｼ繧帝∈謚槭＠縺ｦ縺上□縺輔＞
                             </div>
                         )}
                     </div>
                 </div>
             </div>
-
-            <ConfirmModal
-                isOpen={confirmDeleteEventId !== null}
-                message="このイベントを削除しますか？\n※関連する各キャラクターのステータス情報も失われます。"
-                onConfirm={executeDeleteEvent}
-                onCancel={() => setConfirmDeleteEventId(null)}
-            />
         </div >
     );
 }
