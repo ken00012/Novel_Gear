@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { api, type Character, type CharacterState, type Job, type Skill, type Equipment, type Event } from '../../../api';
+import { api, type Character, type CharacterState, type Job, type Skill, type Equipment, type Event, type Modifier } from '../../../api';
 import { Plus, X, Loader2, Check, Copy } from 'lucide-react';
 import { useStatusAttributes } from '../../../contexts/StatusContext';
 
@@ -23,6 +23,18 @@ export default function StatusEditorPane({
 }: Omit<Props, 'eventList'>) {
     const { statusAttributes } = useStatusAttributes();
     const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+
+    const formatModifiersSummary = (modifiers: Modifier[] | undefined) => {
+        if (!modifiers || modifiers.length === 0) return '';
+        const summaries = modifiers.map(mod => {
+            const liveAttr = statusAttributes.find(a => a.key === mod.attribute);
+            const name = liveAttr ? liveAttr.name : (mod.attribute_name || '(不明なステータス)');
+            const sign = mod.value > 0 ? '+' : '';
+            const unit = mod.type === 'percent' ? '%' : '';
+            return `${name} ${sign}${mod.value}${unit}`;
+        });
+        return `(${summaries.join(', ')})`;
+    };
 
     // Local state for editing. Initialized from either currentState or global character.
     // Use fallback to global character if currentState properties are null/undefined
@@ -289,7 +301,7 @@ export default function StatusEditorPane({
                         >
                             <option value="">-- 追加する装備を選択 --</option>
                             {availableEquipments.filter((eq: Equipment) => !activeEquipments.find((e: Equipment) => e.id === eq.id)).map((eq: Equipment) => (
-                                <option key={eq.id} value={eq.id}>{eq.name}</option>
+                                <option key={eq.id} value={eq.id}>{eq.name} {formatModifiersSummary(eq.modifiers)}</option>
                             ))}
                         </select>
                         <button onClick={handleAddEquipment} disabled={!selectedEqId} className="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition">
@@ -299,7 +311,10 @@ export default function StatusEditorPane({
                     <div className="space-y-2">
                         {activeEquipments.map((eq: Equipment) => (
                             <div key={eq.id} className="flex justify-between items-center bg-white border border-gray-200 p-2.5 rounded-lg shadow-sm group">
-                                <span className="text-sm font-medium text-gray-800">{eq.name}</span>
+                                <span className="text-sm font-medium text-gray-800">
+                                    {eq.name}
+                                    {eq.modifiers && eq.modifiers.length > 0 && <span className="ml-2 text-xs text-gray-400 font-normal">{formatModifiersSummary(eq.modifiers)}</span>}
+                                </span>
                                 <button onClick={() => handleRemoveEquipment(eq.id)} className="text-gray-400 hover:text-red-500 transition opacity-0 group-hover:opacity-100">
                                     <X size={16} />
                                 </button>
@@ -323,7 +338,7 @@ export default function StatusEditorPane({
                         >
                             <option value="">-- 追加するスキルを選択 --</option>
                             {availableSkills.filter((sk: Skill) => !activeSkills.find((s: Skill) => s.id === sk.id)).map((sk: Skill) => (
-                                <option key={sk.id} value={sk.id}>{sk.name}</option>
+                                <option key={sk.id} value={sk.id}>{sk.name} {formatModifiersSummary(sk.modifiers)}</option>
                             ))}
                         </select>
                         <button onClick={handleAddSkill} disabled={!selectedSkillId} className="px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition">
@@ -334,7 +349,10 @@ export default function StatusEditorPane({
                         {activeSkills.map((sk: Skill) => (
                             <div key={sk.id} className="flex justify-between items-center bg-white border border-gray-200 p-2.5 rounded-lg shadow-sm group">
                                 <div>
-                                    <div className="text-sm font-medium text-gray-800">{sk.name}</div>
+                                    <div className="text-sm font-medium text-gray-800">
+                                        {sk.name}
+                                        {sk.modifiers && sk.modifiers.length > 0 && <span className="ml-2 text-xs text-gray-400 font-normal">{formatModifiersSummary(sk.modifiers)}</span>}
+                                    </div>
                                 </div>
                                 <button onClick={() => handleRemoveSkill(sk.id)} className="text-gray-400 hover:text-red-500 transition opacity-0 group-hover:opacity-100">
                                     <X size={16} />

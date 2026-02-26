@@ -23,8 +23,7 @@ export const StatusProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setLoading(true);
         try {
             const res = await api.get<StatusAttribute[]>('/status_attributes/');
-            // Only active ones should be used for UI by default
-            setStatusAttributes(res.data.filter(a => a.is_active));
+            setStatusAttributes(res.data);
         } catch (e) {
             console.error('Failed to fetch status attributes:', e);
         } finally {

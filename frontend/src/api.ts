@@ -11,7 +11,6 @@ export interface StatusAttribute {
     name: string;
     description?: string | null;
     order_index: number;
-    is_active: boolean;
 }
 
 export interface Tag {
@@ -88,6 +87,7 @@ export interface CharacterState {
 
 export interface Modifier {
     attribute: string;
+    attribute_name?: string;
     type: 'flat' | 'percent';
     value: number;
 }

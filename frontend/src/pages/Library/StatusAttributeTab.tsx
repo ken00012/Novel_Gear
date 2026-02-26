@@ -68,16 +68,6 @@ function SortableStatusItem({ attr, editingId, editItem, setEditItem, setEditing
                                 placeholder="説明"
                             />
                         </div>
-                        <div className="flex items-center gap-2">
-                            <label className="flex items-center gap-1 text-sm text-gray-600">
-                                <input
-                                    type="checkbox"
-                                    checked={editItem.is_active}
-                                    onChange={e => setEditItem({ ...editItem, is_active: e.target.checked })}
-                                    className="rounded text-indigo-600 focus:ring-indigo-500"
-                                /> 有効化
-                            </label>
-                        </div>
                         <div className="flex gap-2">
                             <button onClick={() => handleUpdate(attr.id)} className="bg-green-600 text-white p-2 rounded hover:bg-green-700" title="保存">
                                 <Check size={18} />
@@ -91,11 +81,6 @@ function SortableStatusItem({ attr, editingId, editItem, setEditItem, setEditing
                     <>
                         <div className="flex-1 font-bold text-gray-800 text-lg">
                             {attr.name} <span className="text-sm font-normal text-gray-500 ml-2">{attr.description || <span className="italic text-gray-300">説明なし</span>}</span>
-                        </div>
-                        <div className="w-24 flex justify-center">
-                            {attr.is_active ?
-                                <span className="px-2 py-1 bg-green-50 text-green-700 border border-green-200 rounded text-xs font-medium">有効</span> :
-                                <span className="px-2 py-1 bg-gray-50 text-gray-500 border border-gray-200 rounded text-xs font-medium">無効</span>}
                         </div>
                         <div className="flex items-center gap-2">
                             <button onPointerDown={(e) => e.stopPropagation()} onClick={(e) => { e.stopPropagation(); setEditingId(attr.id); setEditItem(attr); }} className="text-gray-400 hover:text-indigo-600 p-2 transition">
@@ -116,7 +101,7 @@ export default function StatusAttributeTab() {
     const { refresh } = useStatusAttributes();
     const [attributes, setAttributes] = useState<StatusAttribute[]>([]);
     const [isCreating, setIsCreating] = useState(false);
-    const [newItem, setNewItem] = useState<Partial<StatusAttribute>>({ name: '', description: '', is_active: true });
+    const [newItem, setNewItem] = useState<Partial<StatusAttribute>>({ name: '', description: '' });
 
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editItem, setEditItem] = useState<Partial<StatusAttribute>>({});
@@ -145,7 +130,7 @@ export default function StatusAttributeTab() {
         try {
             const count = attributes.length;
             await api.post('/status_attributes/', { ...newItem, order_index: count + 1 });
-            setNewItem({ name: '', description: '', is_active: true });
+            setNewItem({ name: '', description: '' });
             setIsCreating(false);
             fetchAttributes();
             refresh();

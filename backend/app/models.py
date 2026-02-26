@@ -200,7 +200,6 @@ class StatusAttribute(Base):
     name = Column(String(50))
     description = Column(Text, nullable=True)
     order_index = Column(Integer, default=0, index=True)
-    is_active = Column(Boolean, default=True, index=True)
 
 # --- Board Simulator ---
 from datetime import datetime

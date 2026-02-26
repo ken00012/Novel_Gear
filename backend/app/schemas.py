@@ -53,7 +53,6 @@ class StatusAttributeBase(BaseModel):
     name: str
     description: Optional[str] = None
     order_index: int = 0
-    is_active: bool = True
 
 class StatusAttributeCreate(StatusAttributeBase):
     pass
