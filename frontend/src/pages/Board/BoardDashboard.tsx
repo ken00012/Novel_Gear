@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { api, type BoardThread } from '../../api';
 import BoardEditor from './components/BoardEditor';
 import { Plus, Trash2, MessageSquare, Pencil } from 'lucide-react';

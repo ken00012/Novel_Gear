@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api, type Skill, type Modifier } from '../../api';
 import { Plus, Edit2, Trash2, X, PlusCircle, MinusCircle } from 'lucide-react';
+import { LibraryEmptyState } from './components/LibraryShared';
 import { useStatusAttributes } from '../../contexts/StatusContext';
 
 export default function SkillTab() {
@@ -144,9 +145,7 @@ export default function SkillTab() {
                         </div>
                     ))}
                     {skills.length === 0 && (
-                        <div className="col-span-full py-12 text-center text-gray-400">
-                            スキルがまだ登録されていません。
-                        </div>
+                        <LibraryEmptyState message="スキルがまだ登録されていません。" />
                     )}
                 </div>
             </div>

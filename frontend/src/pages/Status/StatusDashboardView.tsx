@@ -20,13 +20,9 @@ export default function StatusDashboardView() {
 
     // New Event Form
     const [showNewEvent, setShowNewEvent] = useState(false);
-    const [newChapter, setNewChapter] = useState('');
-    const [newEventName, setNewEventName] = useState('');
 
     // Edit Event Form
     const [editingEventId, setEditingEventId] = useState<number | null>(null);
-    const [editChapter, setEditChapter] = useState('');
-    const [editEventName, setEditEventName] = useState('');
 
     const [searchParams] = useSearchParams();
 

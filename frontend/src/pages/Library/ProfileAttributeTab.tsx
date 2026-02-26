@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api, type CharacterProfileAttribute } from '../../api';
-import { Plus, Trash2, Edit2, Check, X, Tag as TagIcon, GripVertical } from 'lucide-react';
+import { User, GripVertical, Check, X, Plus, Edit2, Trash2, Tag as TagIcon } from 'lucide-react';
+import { LibraryEmptyState } from './components/LibraryShared';
 import { useProfileAttributes } from '../../contexts/ProfileContext';
 import {
     DndContext,
@@ -301,7 +302,7 @@ export default function ProfileAttributeTab() {
             <div className="p-6 border-b border-gray-200 flex justify-between items-center">
                 <div>
                     <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                        <UserIcon className="text-indigo-600" />
+                        <User className="text-indigo-600" />
                         プロフィール項目定義
                     </h3>
                     <p className="text-sm text-gray-500 mt-1">キャラクターのプロフィール（年齢、種族、陣営など）の入力項目をカスタマイズします。</p>
@@ -312,50 +313,17 @@ export default function ProfileAttributeTab() {
                             並べ替えを保存中...
                         </div>
                     )}
-                    {!isCreating && (
-                        <button
-                            onClick={() => setIsCreating(true)}
-                            disabled={isReordering}
-                            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition shadow-sm"
-                        >
-                            <Plus size={18} /> 新規項目追加
-                        </button>
-                    )}
+                    <button
+                        onClick={() => setIsCreating(true)}
+                        disabled={isReordering}
+                        className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition shadow-sm"
+                    >
+                        <Plus size={18} /> 新規項目追加
+                    </button>
                 </div>
             </div>
 
             <div className="flex-1 p-6 overflow-y-auto">
-                {isCreating && (
-                    <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-4 mb-4 shadow-sm flex items-center gap-4">
-                        <div className="flex-1">
-                            <input
-                                type="text"
-                                placeholder="表示名 (例: 種族、出身地)"
-                                value={newItem.name}
-                                onChange={e => setNewItem({ ...newItem, name: e.target.value })}
-                                className="w-full border border-gray-300 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500"
-                            />
-                        </div>
-                        <div className="w-48">
-                            <select
-                                value={newItem.type}
-                                onChange={e => setNewItem({ ...newItem, type: e.target.value as 'text' | 'tag' })}
-                                className="w-full border border-gray-300 rounded px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                            >
-                                <option value="text">テキスト入力</option>
-                                <option value="tag">タグ選択</option>
-                            </select>
-                        </div>
-                        <div className="flex gap-2">
-                            <button onClick={handleCreate} className="bg-indigo-600 text-white p-2 rounded hover:bg-indigo-700 transition" title="保存">
-                                <Check size={18} />
-                            </button>
-                            <button onClick={() => setIsCreating(false)} className="bg-gray-200 text-gray-600 p-2 rounded hover:bg-gray-300 transition" title="キャンセル">
-                                <X size={18} />
-                            </button>
-                        </div>
-                    </div>
-                )}
 
                 <div className="space-y-3">
                     <DndContext
@@ -387,34 +355,56 @@ export default function ProfileAttributeTab() {
                             ))}
                         </SortableContext>
                     </DndContext>
-                    {attributes.length === 0 && !isCreating && (
-                        <div className="text-center py-12 text-gray-400">
-                            プロフィール項目が定義されていません。「新規項目追加」から設定を作成してください。
-                        </div>
+                    {attributes.length === 0 && (
+                        <LibraryEmptyState message="プロフィール項目が定義されていません。「新規項目追加」から設定を作成してください。" />
                     )}
                 </div>
             </div>
+
+            {isCreating && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl p-6 w-full max-w-lg shadow-xl">
+                        <div className="flex justify-between items-center mb-4 border-b pb-2">
+                            <h3 className="text-lg font-bold">新規項目追加</h3>
+                            <button onClick={() => setIsCreating(false)} className="text-gray-400 hover:text-gray-600">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">表示名 (例: 種族、出身地) *</label>
+                                <input
+                                    type="text"
+                                    value={newItem.name}
+                                    onChange={e => setNewItem({ ...newItem, name: e.target.value })}
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">入力タイプ</label>
+                                <select
+                                    value={newItem.type}
+                                    onChange={e => setNewItem({ ...newItem, type: e.target.value as 'text' | 'tag' })}
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                                >
+                                    <option value="text">テキスト入力</option>
+                                    <option value="tag">タグ選択</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+                            <button onClick={() => setIsCreating(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                                キャンセル
+                            </button>
+                            <button onClick={handleCreate} disabled={!newItem.name} className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50">
+                                追加する
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
 
-// UserIcon local component
-function UserIcon(props: any) {
-    return (
-        <svg
-            {...props}
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-        >
-            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-            <circle cx="12" cy="7" r="4" />
-        </svg>
-    )
-}
+

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api, type StatusAttribute } from '../../api';
 import { Plus, Trash2, Edit2, Check, X, GripVertical } from 'lucide-react';
+import { LibraryEmptyState } from './components/LibraryShared';
 import { useStatusAttributes } from '../../contexts/StatusContext';
 import {
     DndContext,
@@ -224,47 +225,18 @@ export default function StatusAttributeTab() {
                             並べ替えを保存中...
                         </div>
                     )}
-                    {!isCreating && (
-                        <button
-                            onClick={() => setIsCreating(true)}
-                            disabled={isReordering}
-                            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition shadow-sm"
-                        >
-                            <Plus size={18} /> 新規項目追加
-                        </button>
-                    )}
+                    <button
+                        onClick={() => setIsCreating(true)}
+                        disabled={isReordering}
+                        className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition shadow-sm"
+                    >
+                        <Plus size={18} /> 新規項目追加
+                    </button>
                 </div>
             </div>
 
             <div className="flex-1 p-6 overflow-y-auto">
 
-                {isCreating && (
-                    <div className="bg-indigo-50 p-4 rounded-lg border border-indigo-100 mb-6 flex flex-col gap-3">
-                        <h4 className="font-bold text-indigo-800 text-sm">新規項目の追加</h4>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="col-span-2">
-                                <label className="block text-xs font-bold text-gray-600 mb-1">表示名 (例: 体力, 筋力)</label>
-                                <input
-                                    value={newItem.name || ''}
-                                    onChange={e => setNewItem({ ...newItem, name: e.target.value })}
-                                    className="w-full text-sm p-2 border rounded focus:ring-1 focus:outline-none"
-                                />
-                            </div>
-                            <div className="col-span-2">
-                                <label className="block text-xs font-bold text-gray-600 mb-1">説明 (任意)</label>
-                                <input
-                                    value={newItem.description || ''}
-                                    onChange={e => setNewItem({ ...newItem, description: e.target.value })}
-                                    className="w-full text-sm p-2 border rounded focus:ring-1 focus:outline-none"
-                                />
-                            </div>
-                        </div>
-                        <div className="flex justify-end gap-2 mt-2">
-                            <button onClick={() => setIsCreating(false)} className="px-4 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-200 rounded transition">キャンセル</button>
-                            <button onClick={handleCreate} disabled={!newItem.name} className="px-4 py-1.5 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 rounded transition">追加する</button>
-                        </div>
-                    </div>
-                )}
 
                 <div className="space-y-3">
                     <DndContext
@@ -291,15 +263,54 @@ export default function StatusAttributeTab() {
                                     />
                                 ))}
                             </SortableContext>
-                            {attributes.length === 0 && !isCreating && (
-                                <div className="p-8 text-center text-gray-500 bg-white rounded-lg border border-dashed border-gray-300">
-                                    ステータス項目が登録されていません。右上から追加してください。
-                                </div>
+                            {attributes.length === 0 && (
+                                <LibraryEmptyState message="ステータス項目が登録されていません。右上から追加してください。" />
                             )}
                         </div>
                     </DndContext>
                 </div>
             </div>
+
+            {isCreating && (
+                <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-xl p-6 w-full max-w-lg shadow-xl">
+                        <div className="flex justify-between items-center mb-4 border-b pb-2">
+                            <h3 className="text-lg font-bold">新規項目追加</h3>
+                            <button onClick={() => setIsCreating(false)} className="text-gray-400 hover:text-gray-600">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">表示名 (例: 体力, 筋力) *</label>
+                                <input
+                                    type="text"
+                                    value={newItem.name || ''}
+                                    onChange={e => setNewItem({ ...newItem, name: e.target.value })}
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">説明 (任意)</label>
+                                <input
+                                    type="text"
+                                    value={newItem.description || ''}
+                                    onChange={e => setNewItem({ ...newItem, description: e.target.value })}
+                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-100">
+                            <button onClick={() => setIsCreating(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition">
+                                キャンセル
+                            </button>
+                            <button onClick={handleCreate} disabled={!newItem.name} className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition disabled:opacity-50">
+                                追加する
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

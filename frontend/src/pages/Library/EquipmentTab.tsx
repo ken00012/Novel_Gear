@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api, type Equipment, type Modifier } from '../../api';
 import { Plus, Edit2, Trash2, X, PlusCircle, MinusCircle } from 'lucide-react';
+import { LibraryEmptyState } from './components/LibraryShared';
 import { useStatusAttributes } from '../../contexts/StatusContext';
 
 const RARITIES = ['N', 'R', 'SR', 'SSR', 'UR', 'Legendary'];
@@ -166,9 +167,7 @@ export default function EquipmentTab() {
                         </div>
                     ))}
                     {equipments.length === 0 && (
-                        <div className="col-span-full py-12 text-center text-gray-400">
-                            装備品がまだ登録されていません。
-                        </div>
+                        <LibraryEmptyState message="装備品がまだ登録されていません。" />
                     )}
                 </div>
             </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { api, type Glossary } from '../../api';
 import { Plus, Edit2, Trash2, X } from 'lucide-react';
+import { LibraryEmptyState } from './components/LibraryShared';
 
 export default function GlossaryTab() {
     const [glossaries, setGlossaries] = useState<Glossary[]>([]);
@@ -102,9 +103,7 @@ export default function GlossaryTab() {
                         </div>
                     ))}
                     {glossaries.length === 0 && (
-                        <div className="col-span-full py-12 text-center text-gray-400">
-                            用語がまだ登録されていません。
-                        </div>
+                        <LibraryEmptyState message="用語がまだ登録されていません。" />
                     )}
                 </div>
             </div>
