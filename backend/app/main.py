@@ -613,3 +613,31 @@ def delete_board_name_preset(preset_id: int, db: Session = Depends(get_db)):
     db.delete(db_preset)
     db.commit()
     return {"ok": True}
+
+# --- App Settings ---
+@app.get("/api/app_settings/{key}", response_model=schemas.AppSettings)
+def read_app_setting(key: str, db: Session = Depends(get_db)):
+    setting = db.query(models.AppSettings).filter(models.AppSettings.setting_key == key).first()
+    if not setting:
+        # Default fallback mechanism for UI settings
+        default_value = []
+        if key == "card_display_items":
+            default_value = ["陣営"] # デフォルトでは陣営を表示する
+            
+        setting = models.AppSettings(setting_key=key, setting_value=default_value)
+        db.add(setting)
+        db.commit()
+        db.refresh(setting)
+    return setting
+
+@app.put("/api/app_settings/{key}", response_model=schemas.AppSettings)
+def update_app_setting(key: str, setting_update: schemas.AppSettingsCreate, db: Session = Depends(get_db)):
+    setting = db.query(models.AppSettings).filter(models.AppSettings.setting_key == key).first()
+    if not setting:
+        setting = models.AppSettings(setting_key=key, setting_value=setting_update.setting_value)
+        db.add(setting)
+    else:
+        setting.setting_value = setting_update.setting_value
+    db.commit()
+    db.refresh(setting)
+    return setting

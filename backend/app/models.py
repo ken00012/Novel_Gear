@@ -237,3 +237,11 @@ class BoardNamePreset(Base):
     name = Column(String(100), index=True)
     user_id_str = Column(String(50), nullable=True)
     order_index = Column(Integer, default=0, index=True)
+
+# --- App Settings ---
+class AppSettings(Base):
+    __tablename__ = "app_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    setting_key = Column(String(50), unique=True, index=True)
+    setting_value = Column(JSON, default={})

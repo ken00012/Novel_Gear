@@ -286,3 +286,17 @@ class BoardThread(BoardThreadBase):
 
     class Config:
         from_attributes = True
+
+# --- App Settings ---
+class AppSettingsBase(BaseModel):
+    setting_key: str
+    setting_value: Any = {}
+
+class AppSettingsCreate(AppSettingsBase):
+    pass
+
+class AppSettings(AppSettingsBase):
+    id: int
+
+    class Config:
+        from_attributes = True

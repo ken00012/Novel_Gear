@@ -159,3 +159,9 @@ export interface BoardNamePreset {
     user_id_str?: string | null;
     order_index: number;
 }
+
+export interface AppSettings {
+    id: number;
+    setting_key: string;
+    setting_value: any;
+}

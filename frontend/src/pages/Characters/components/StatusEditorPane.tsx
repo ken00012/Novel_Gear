@@ -28,7 +28,7 @@ export default function StatusEditorPane({
         if (!modifiers || modifiers.length === 0) return '';
         const summaries = modifiers.map(mod => {
             const liveAttr = statusAttributes.find(a => a.key === mod.attribute);
-            const name = liveAttr ? liveAttr.name : (mod.attribute_name || '(不明なステータス)');
+            const name = liveAttr ? liveAttr.name : (mod.attribute_name ? `(削除済：${mod.attribute_name})` : '(不明なステータス)');
             const sign = mod.value > 0 ? '+' : '';
             const unit = mod.type === 'percent' ? '%' : '';
             return `${name} ${sign}${mod.value}${unit}`;
@@ -291,7 +291,7 @@ export default function StatusEditorPane({
                 <div className="w-full">
                     <label className="block text-sm font-bold text-gray-700 mb-2 flex items-center justify-between">
                         <span>装備品</span>
-                        <span className="text-xs font-normal text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{activeEquipments.length} / 5</span>
+                        <span className="text-xs font-normal text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{activeEquipments.length} 個</span>
                     </label>
                     <div className="flex gap-2 mb-3">
                         <select
