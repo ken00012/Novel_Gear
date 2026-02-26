@@ -28,7 +28,7 @@ export default function StatusEditorPane({
         if (!modifiers || modifiers.length === 0) return '';
         const summaries = modifiers.map(mod => {
             const liveAttr = statusAttributes.find(a => a.key === mod.attribute);
-            const name = liveAttr ? liveAttr.name : (mod.attribute_name ? `(削除済：${mod.attribute_name})` : mod.attribute);
+            const name = liveAttr ? liveAttr.name : (mod.attribute_name ? `(削除済：${mod.attribute_name})` : '(不明なステータス)');
             const sign = mod.value > 0 ? '+' : '';
             const unit = mod.type === 'percent' ? '%' : '';
             return `${name} ${sign}${mod.value}${unit}`;

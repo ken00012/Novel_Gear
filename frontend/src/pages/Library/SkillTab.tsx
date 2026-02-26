@@ -89,8 +89,10 @@ export default function SkillTab() {
     const formatModifierLabel = (mod: Modifier) => {
         const sign = mod.value >= 0 ? '+' : '';
         const unit = mod.type === 'percent' ? '%' : '';
-        const attrName = statusAttributes.find(a => a.key === mod.attribute)?.name
-            || (mod.attribute_name ? `(削除済：${mod.attribute_name})` : mod.attribute);
+        const liveAttr = statusAttributes.find(a => a.key === mod.attribute);
+        const attrName = liveAttr
+            ? liveAttr.name
+            : (mod.attribute_name ? `(削除済：${mod.attribute_name})` : '(不明なステータス)');
         return `${attrName} ${sign}${mod.value}${unit}`;
     };
 
