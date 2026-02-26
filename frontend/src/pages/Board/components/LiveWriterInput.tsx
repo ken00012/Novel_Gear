@@ -20,6 +20,8 @@ export default function LiveWriterInput({ namePresets, onReloadPresets, onSubmit
 
     const [showLibraryEditor, setShowLibraryEditor] = useState(false);
 
+    const [isIdFixed, setIsIdFixed] = useState(false);
+
     const generateId = () => {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
         let result = '';
@@ -38,8 +40,10 @@ export default function LiveWriterInput({ namePresets, onReloadPresets, onSubmit
         setName(preset.name);
         if (preset.user_id_str) {
             setUserIdStr(preset.user_id_str);
+            setIsIdFixed(true);
         } else {
             generateId(); // PresetにID指定がない場合（名無し等）は再生成する
+            setIsIdFixed(false);
         }
     };
 
@@ -64,6 +68,9 @@ export default function LiveWriterInput({ namePresets, onReloadPresets, onSubmit
         if (!name || !content) return;
         onSubmit(name, userIdStr, content);
         setContent(''); // 送信後にテキストをクリア
+        if (!isIdFixed) {
+            generateId();
+        }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -154,6 +161,16 @@ export default function LiveWriterInput({ namePresets, onReloadPresets, onSubmit
                         <button onClick={generateId} className="text-gray-400 hover:text-indigo-600 transition" title="IDを再生成">
                             <RefreshCw size={14} />
                         </button>
+                        <div className="h-4 border-l border-gray-300 mx-2"></div>
+                        <label className="flex items-center gap-1 cursor-pointer" title="IDを固定する">
+                            <input
+                                type="checkbox"
+                                checked={isIdFixed}
+                                onChange={e => setIsIdFixed(e.target.checked)}
+                                className="w-3.5 h-3.5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                            />
+                            <span className="text-xs font-bold text-gray-500 whitespace-nowrap">固定</span>
+                        </label>
                     </div>
                 </div>
 

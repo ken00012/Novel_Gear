@@ -63,17 +63,22 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
                 start_index: startIndex
             });
             setShowSettings(false);
+
+            if (startIndex !== thread.start_index) {
+                await handleRenumberAndSave(posts, startIndex);
+            }
+
             onThreadUpdate();
         } catch (e) {
             console.error(e);
         }
     };
 
-    const handleRenumberAndSave = async (newPosts: BoardPost[]) => {
+    const handleRenumberAndSave = async (newPosts: BoardPost[], baseIndex: number = thread.start_index) => {
         // Renumber based on array index and start_index
         const renumbered = newPosts.map((p, index) => ({
             ...p,
-            number: index + thread.start_index,
+            number: index + baseIndex,
             order_index: index
         }));
 
@@ -130,17 +135,16 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
         }
     };
 
-    const handleUpdatePost = async (id: number, newNumber: number, newName: string, content: string) => {
+    const handleUpdatePost = async (id: number, newName: string, content: string) => {
         const p = posts.find(x => x.id === id);
         if (!p) return;
         try {
             await api.put(`/board_posts/${id}`, {
                 ...p,
-                number: newNumber,
                 name: newName,
                 content
             });
-            setPosts(posts.map(x => x.id === id ? { ...x, number: newNumber, name: newName, content } : x));
+            setPosts(posts.map(x => x.id === id ? { ...x, name: newName, content } : x));
         } catch (e) {
             console.error(e);
         }
@@ -241,8 +245,9 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
                     <PostItem
                         key={post.id}
                         post={post}
+                        namePresets={namePresets}
                         onDelete={() => handleDeletePost(post.id)}
-                        onUpdate={(newNum, newName, c) => handleUpdatePost(post.id, newNum, newName, c)}
+                        onUpdate={(newName, c) => handleUpdatePost(post.id, newName, c)}
                         onInsertAbove={(name, idStr, c) => handleAddPost(name, idStr, c, i)}
                     />
                 ))}
