@@ -180,12 +180,34 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
     return (
         <div className="flex flex-col h-full bg-slate-50 relative">
             {/* Header */}
-            <div className="p-4 border-b bg-white flex justify-between items-center shrink-0 shadow-sm z-10">
-                <h3 className="text-xl font-bold text-gray-800">{thread.title}</h3>
+            <div className="p-4 border-b bg-white flex justify-between items-center shrink-0 shadow-sm z-20 relative">
+                <div className="flex flex-col gap-1">
+                    <h3 className="text-xl font-bold text-gray-800">{thread.title}</h3>
+                    <div className="flex items-center gap-2 text-xs">
+                        <span className="text-gray-500 font-bold">開始レス番号:</span>
+                        <input
+                            type="number"
+                            min={1}
+                            value={startIndex}
+                            onChange={e => setStartIndex(parseInt(e.target.value) || 1)}
+                            className="w-16 p-1 bg-gray-50 border border-gray-300 rounded font-mono text-center focus:ring-1 focus:ring-indigo-500 focus:outline-none"
+                            title="ここを変更して右のボタンで保存すると、以降のレス番号が振り直されます"
+                        />
+                        <button
+                            onClick={handleSaveTemplates}
+                            disabled={startIndex === thread.start_index}
+                            className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded font-bold hover:bg-indigo-200 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed transition"
+                            title="開始番号の変更を適用"
+                        >
+                            適用
+                        </button>
+                    </div>
+                </div>
+
                 <div className="flex gap-2">
                     <button
                         onClick={() => setShowSettings(!showSettings)}
-                        className="flex items-center gap-1 px-3 py-1.5 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50 transition"
+                        className={`flex items-center gap-1 px-3 py-1.5 border rounded-md text-sm transition ${showSettings ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
                     >
                         <Settings size={16} /> テンプレート設定
                     </button>
@@ -198,43 +220,50 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
                 </div>
             </div>
 
-            {/* Settings Panel */}
+            {/* Settings Panel (Floating Design) */}
             {showSettings && (
-                <div className="p-4 border-b bg-gray-50 shrink-0">
-                    <div className="flex flex-col gap-3 max-w-3xl">
-                        <div className="bg-indigo-50 border border-indigo-100 p-2 text-xs text-indigo-800 rounded mb-2">
-                            プレースホルダーとして <b>{'{'}{'{'}number{'}'}{'}'}</b>, <b>{'{'}{'{'}name{'}'}{'}'}</b>, <b>{'{'}{'{'}id{'}'}{'}'}</b>, <b>{'{'}{'{'}content{'}'}{'}'}</b>, <b>{'{'}{'{'}title{'}'}{'}'}</b>, <b>{'{'}{'{'}date{'}'}{'}'}</b> が使用できます。<br />
-                            改行を含めたい場合は \n と入力するか、そのままEnterで改行してください。
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-600 mb-1">スレッド出力テンプレート</label>
-                            <textarea
-                                value={threadTemplate}
-                                onChange={e => setThreadTemplate(e.target.value)}
-                                className="w-full text-xs font-mono p-2 border rounded focus:ring-1 focus:outline-none" rows={2}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-600 mb-1">レス出力テンプレート</label>
-                            <textarea
-                                value={postTemplate}
-                                onChange={e => setPostTemplate(e.target.value)}
-                                className="w-full text-xs font-mono p-2 border rounded focus:ring-1 focus:outline-none" rows={3}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-xs font-bold text-gray-600 mb-1">開始レス番号</label>
-                            <input
-                                type="number"
-                                min={1}
-                                value={startIndex}
-                                onChange={e => setStartIndex(parseInt(e.target.value) || 1)}
-                                className="w-32 text-xs font-mono p-2 border rounded focus:ring-1 focus:outline-none"
-                            />
-                        </div>
-                        <div className="flex justify-end">
-                            <button onClick={handleSaveTemplates} className="px-4 py-1.5 bg-indigo-100 text-indigo-700 text-sm font-bold rounded hover:bg-indigo-200 transition">変更を保存</button>
-                        </div>
+                <div className="absolute top-[80px] right-4 w-96 bg-white border-2 border-indigo-400 rounded-lg shadow-2xl p-4 z-50 flex flex-col gap-3">
+                    <div className="flex justify-between items-center mb-1">
+                        <h4 className="font-bold text-gray-800 flex items-center gap-1 text-sm">
+                            <Settings size={16} className="text-indigo-600" /> テンプレート設定
+                        </h4>
+                        <button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-gray-600 p-1 transition">
+                            <X size={18} />
+                        </button>
+                    </div>
+
+                    <div className="bg-indigo-50 border border-indigo-100 p-2 text-xs text-indigo-800 rounded">
+                        プレースホルダーとして <b>{'{'}{'{'}number{'}'}{'}'}</b>, <b>{'{'}{'{'}name{'}'}{'}'}</b>, <b>{'{'}{'{'}id{'}'}{'}'}</b>, <b>{'{'}{'{'}content{'}'}{'}'}</b>, <b>{'{'}{'{'}title{'}'}{'}'}</b>, <b>{'{'}{'{'}date{'}'}{'}'}</b> が使用できます。<br />
+                        改行を含めたい場合は \n と入力するか、そのままEnterで改行してください。
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-600 mb-1">スレッド出力テンプレート</label>
+                        <textarea
+                            value={threadTemplate}
+                            onChange={e => setThreadTemplate(e.target.value)}
+                            className="w-full text-xs font-mono p-2 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:outline-none text-gray-800 resize-none" rows={2}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-600 mb-1">レス出力テンプレート</label>
+                        <textarea
+                            value={postTemplate}
+                            onChange={e => setPostTemplate(e.target.value)}
+                            className="w-full text-xs font-mono p-2 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:outline-none text-gray-800 resize-none" rows={3}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-xs font-bold text-gray-600 mb-1">開始レス番号 (ヘッダーと連動)</label>
+                        <input
+                            type="number"
+                            min={1}
+                            value={startIndex}
+                            onChange={e => setStartIndex(parseInt(e.target.value) || 1)}
+                            className="w-32 text-xs font-mono p-2 border border-gray-300 rounded focus:ring-1 focus:ring-indigo-500 focus:outline-none text-gray-800"
+                        />
+                    </div>
+                    <div className="flex justify-end gap-2 mt-2">
+                        <button onClick={handleSaveTemplates} className="px-4 py-1.5 bg-indigo-600 text-white text-sm font-bold rounded hover:bg-indigo-700 transition shadow-sm">設定を保存</button>
                     </div>
                 </div>
             )}
