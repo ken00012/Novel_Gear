@@ -134,6 +134,7 @@ export interface Plot {
 // Board Simulator
 export interface BoardThread {
     id: number;
+    chapter_number?: string | null;
     title: string;
     thread_template: string;
     post_template: string;

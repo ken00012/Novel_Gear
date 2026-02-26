@@ -130,15 +130,17 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
         }
     };
 
-    const handleUpdatePost = async (id: number, content: string) => {
+    const handleUpdatePost = async (id: number, newNumber: number, newName: string, content: string) => {
         const p = posts.find(x => x.id === id);
         if (!p) return;
         try {
             await api.put(`/board_posts/${id}`, {
                 ...p,
+                number: newNumber,
+                name: newName,
                 content
             });
-            setPosts(posts.map(x => x.id === id ? { ...x, content } : x));
+            setPosts(posts.map(x => x.id === id ? { ...x, number: newNumber, name: newName, content } : x));
         } catch (e) {
             console.error(e);
         }
@@ -240,7 +242,7 @@ export default function BoardEditor({ thread, onThreadUpdate }: BoardEditorProps
                         key={post.id}
                         post={post}
                         onDelete={() => handleDeletePost(post.id)}
-                        onUpdate={(c) => handleUpdatePost(post.id, c)}
+                        onUpdate={(newNum, newName, c) => handleUpdatePost(post.id, newNum, newName, c)}
                         onInsertAbove={(name, idStr, c) => handleAddPost(name, idStr, c, i)}
                     />
                 ))}

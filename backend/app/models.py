@@ -209,9 +209,10 @@ class BoardThread(Base):
     __tablename__ = "board_threads"
 
     id = Column(Integer, primary_key=True, index=True)
+    chapter_number = Column(String(100), nullable=True)
     title = Column(String(200), index=True)
-    thread_template = Column(Text, default="1: 名無しさん : {{date}} ID:{{id}}\n{{title}}\n")
-    post_template = Column(Text, default="{{number}}: {{name}} ID:{{id}}\n{{content}}\n")
+    thread_template = Column(Text, default="{{title}}\n\n")
+    post_template = Column(Text, default="{{number}}: {{name}} ID:{{id}}\n{{content}}\n\n")
     start_index = Column(Integer, default=1)
     created_at = Column(String(50), default=lambda: datetime.now().isoformat())
 

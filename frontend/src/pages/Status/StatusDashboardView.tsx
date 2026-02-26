@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { api, type Event, type Character, type CharacterState, type Job, type Skill, type Equipment } from '../../api';
 import { Plus, Trash2, Pencil } from 'lucide-react';
 import StatusEditorPane from '../Characters/components/StatusEditorPane';
+import CreateItemForm from '../../components/common/CreateItemForm';
 
 export default function StatusDashboardView() {
     const [events, setEvents] = useState<Event[]>([]);
@@ -111,16 +112,14 @@ export default function StatusDashboardView() {
         }
     };
 
-    const handleAddEvent = async () => {
-        if (!newChapter.trim() || !newEventName.trim()) return;
+    const handleAddEvent = async (chapter: string, name: string) => {
+        if (!name.trim()) return;
         try {
             const res = await api.post<Event>('/events/', {
-                chapter_number: newChapter,
-                event_name: newEventName,
+                chapter_number: chapter,
+                event_name: name,
                 order_index: events.length
             });
-            setNewChapter('');
-            setNewEventName('');
             setShowNewEvent(false);
             await fetchEvents();
             setSelectedEventId(res.data.id);
@@ -129,21 +128,15 @@ export default function StatusDashboardView() {
         }
     };
 
-    const handleStartEdit = (ev: Event) => {
-        setEditingEventId(ev.id);
-        setEditChapter(ev.chapter_number);
-        setEditEventName(ev.event_name);
-    };
-
-    const handleSaveEditEvent = async (ev: Event) => {
-        if (editChapter === ev.chapter_number && editEventName === ev.event_name) {
+    const handleSaveEditEvent = async (ev: Event, chapter: string, name: string) => {
+        if (chapter === ev.chapter_number && name === ev.event_name) {
             setEditingEventId(null);
             return;
         }
         try {
             await api.put(`/events/${ev.id}`, {
-                chapter_number: editChapter,
-                event_name: editEventName,
+                chapter_number: chapter,
+                event_name: name,
                 order_index: ev.order_index
             });
             setEditingEventId(null);
@@ -184,25 +177,16 @@ export default function StatusDashboardView() {
                 </div>
 
                 {showNewEvent && (
-                    <div className="p-4 bg-indigo-50 border-b border-indigo-100">
-                        <input
-                            type="text"
-                            placeholder="章番号 (例: 第1話)"
-                            value={newChapter}
-                            onChange={e => setNewChapter(e.target.value)}
-                            className="w-full mb-2 text-sm px-2 py-1.5 border rounded"
+                    <div className="p-4 border-b border-gray-100 bg-gray-50">
+                        <CreateItemForm
+                            chapterLabel="章番号"
+                            chapterPlaceholder="例: 第1話"
+                            titleLabel="イベント名"
+                            titlePlaceholder="例: 魔王討伐後"
+                            onSubmit={handleAddEvent}
+                            onCancel={() => setShowNewEvent(false)}
+                            submitLabel="追加"
                         />
-                        <input
-                            type="text"
-                            placeholder="イベント名 (例: 魔王討伐後)"
-                            value={newEventName}
-                            onChange={e => setNewEventName(e.target.value)}
-                            className="w-full mb-3 text-sm px-2 py-1.5 border rounded"
-                        />
-                        <div className="flex justify-end gap-2">
-                            <button onClick={() => setShowNewEvent(false)} className="text-xs text-gray-500">キャンセル</button>
-                            <button onClick={handleAddEvent} className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded">追加</button>
-                        </div>
                     </div>
                 )}
 
@@ -211,69 +195,53 @@ export default function StatusDashboardView() {
                         <p className="text-sm text-gray-400 text-center py-4">イベントがありません</p>
                     ) : (
                         events.map(ev => (
-                            <div
-                                key={ev.id}
-                                onClick={() => setSelectedEventId(ev.id)}
-                                className={`p-3 rounded-lg border cursor-pointer transition relative group ${selectedEventId === ev.id
-                                    ? 'border-indigo-500 bg-indigo-50 shadow-sm'
-                                    : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
-                                    }`}
-                            >
-                                <div className="pr-16">
-                                    {editingEventId === ev.id ? (
-                                        <div
-                                            className="flex flex-col gap-1"
-                                            onClick={e => e.stopPropagation()}
-                                            onBlur={e => {
-                                                // 親コンテナ外にフォーカスが外れた場合のみ保存（input間の移動は無視）
-                                                if (!e.currentTarget.contains(e.relatedTarget)) {
-                                                    handleSaveEditEvent(ev);
-                                                }
+                            editingEventId === ev.id ? (
+                                <CreateItemForm
+                                    key={ev.id}
+                                    chapterLabel="章番号"
+                                    chapterPlaceholder="例: 第1話"
+                                    titleLabel="イベント名"
+                                    titlePlaceholder="例: 魔王討伐後"
+                                    initialChapter={ev.chapter_number || ''}
+                                    initialTitle={ev.event_name}
+                                    onSubmit={(ch, tit) => handleSaveEditEvent(ev, ch, tit)}
+                                    onCancel={() => setEditingEventId(null)}
+                                    submitLabel="保存"
+                                />
+                            ) : (
+                                <div
+                                    key={ev.id}
+                                    onClick={() => setSelectedEventId(ev.id)}
+                                    className={`p-3 rounded-lg border cursor-pointer transition relative group ${selectedEventId === ev.id
+                                        ? 'border-indigo-500 bg-indigo-50 shadow-sm'
+                                        : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
+                                        }`}
+                                >
+                                    <div className="pr-16">
+                                        <div className="text-xs font-bold text-indigo-600 mb-1">{ev.chapter_number}</div>
+                                        <div className="text-sm text-gray-800 font-medium">{ev.event_name}</div>
+                                    </div>
+                                    <div className="absolute top-3 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setEditingEventId(ev.id);
                                             }}
-                                            onKeyDown={e => {
-                                                if (e.key === 'Enter') handleSaveEditEvent(ev);
-                                                if (e.key === 'Escape') setEditingEventId(null);
-                                            }}
+                                            className="text-gray-400 hover:text-indigo-600 transition p-1"
+                                            title="編集"
                                         >
-                                            <input
-                                                value={editChapter}
-                                                onChange={e => setEditChapter(e.target.value)}
-                                                className="text-xs font-bold text-indigo-600 bg-transparent border-b border-indigo-200 focus:outline-none w-full"
-                                                autoFocus
-                                            />
-                                            <input
-                                                value={editEventName}
-                                                onChange={e => setEditEventName(e.target.value)}
-                                                className="text-sm font-medium text-gray-800 bg-transparent border-b border-gray-300 focus:outline-none w-full"
-                                            />
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <div className="text-xs font-bold text-indigo-600 mb-1">{ev.chapter_number}</div>
-                                            <div className="text-sm text-gray-800 font-medium">{ev.event_name}</div>
-                                        </>
-                                    )}
+                                            <Pencil size={16} />
+                                        </button>
+                                        <button
+                                            onClick={(e) => handleDeleteEvent(e, ev.id)}
+                                            className="text-gray-400 hover:text-red-500 transition p-1"
+                                            title="削除"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="absolute top-3 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition">
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleStartEdit(ev);
-                                        }}
-                                        className="text-gray-400 hover:text-indigo-600 transition p-1"
-                                        title="編集"
-                                    >
-                                        <Pencil size={16} />
-                                    </button>
-                                    <button
-                                        onClick={(e) => handleDeleteEvent(e, ev.id)}
-                                        className="text-gray-400 hover:text-red-500 transition p-1"
-                                        title="削除"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
-                                </div>
-                            </div>
+                            )
                         ))
                     )}
                 </div>
@@ -333,6 +301,6 @@ export default function StatusDashboardView() {
                     </div>
                 </div>
             </div>
-        </div>
+        </div >
     );
 }

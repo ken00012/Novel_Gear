@@ -271,9 +271,10 @@ class BoardPost(BoardPostBase):
         from_attributes = True
 
 class BoardThreadBase(BaseModel):
+    chapter_number: Optional[str] = None
     title: str
-    thread_template: str = "1: 名無しさん : {{date}} ID:{{id}}\n{{title}}\n"
-    post_template: str = "{{number}}: {{name}} ID:{{id}}\n{{content}}\n"
+    thread_template: str = "{{title}}\n\n"
+    post_template: str = "{{number}}: {{name}} ID:{{id}}\n{{content}}\n\n"
     start_index: int = 1
 
 class BoardThreadCreate(BoardThreadBase):
